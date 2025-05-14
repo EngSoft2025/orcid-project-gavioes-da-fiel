@@ -1,4 +1,4 @@
-# Trabalho ORCI
+# Trabalho ORCID
 
 Documentação para a realização do Trabalho da Disciplina SCC0130 - Engenharia de Software, ministrada pelo Prof. Dr. Seiji Isotani.
 
