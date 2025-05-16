@@ -1,0 +1,76 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body,
+html {
+  height: 100%;
+  font-family: "Arial", sans-serif;
+}
+#root {
+  height: 100%;
+}
+.container {
+  display: flex;
+  height: 100vh;
+}
+.image-section {
+  flex: 1;
+  background: url("https://source.unsplash.com/random/800x600/?technology")
+    no-repeat center center;
+  background-size: cover;
+  position: relative;
+}
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+}
+.form-section {
+  flex: 1;
+  background: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.form-container {
+  width: 80%;
+  max-width: 320px;
+}
+.form-container h1 {
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  color: #111;
+}
+.form-container input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+.form-container button {
+  width: 100%;
+  padding: 12px;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.form-container .toggle {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+.form-container .toggle a {
+  color: #007bff;
+  text-decoration: none;
+  cursor: pointer;
+}
