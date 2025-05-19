@@ -44,7 +44,7 @@ def get_author_profile(orcid=None, author_id=None):
         endpoint = f"{BASE_URL}/content/author/author_id/{author_id}"
     else:
         endpoint = f"{BASE_URL}/content/author/orcid/{orcid}"
-    params = {"view": "ENHANCED"}
+    params = {"view": "STANDARD"}
 
     try:
         resp = SESSION.get(endpoint, headers=HEADERS, params=params, timeout=TIMEOUT)
