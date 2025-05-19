@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { FaSearch, FaBars } from "react-icons/fa";
+import FilterPanel from "../components/filtros";
 import "../Dashboard.css";
 
 function Dashboard({ isLoggedIn, user }) {
@@ -8,14 +9,66 @@ function Dashboard({ isLoggedIn, user }) {
   const loggedId = user?.id;
   const isOwnProfile = isLoggedIn && loggedId === authorId;
   const [showSidebar, setShowSidebar] = useState(isOwnProfile);
-  // opcional: ao mudar authorId, resetar sidebar se não for próprio
+
   useEffect(() => {
     setShowSidebar(isOwnProfile);
   }, [authorId, isOwnProfile]);
 
+  // state for filters reusable
+  const [filterYear, setFilterYear] = useState("");
+  const [filterAuthor, setFilterAuthor] = useState("");
+  const [filterInstitution, setFilterInstitution] = useState("");
+  const [filterSortCitations, setFilterSortCitations] = useState("");
+  const [filterCoAuthor, setFilterCoAuthor] = useState("");
+  const [filterLanguage, setFilterLanguage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // dummy data - replace with API call by authorId
+  const [researchData, setResearchData] = useState([]);
+  useEffect(() => {
+    fetch("/data/research.json")
+      .then((r) => r.json())
+      .then(setResearchData);
+  }, []);
+
+  // derive options and reuse FilterPanel
+  const years = Array.from(new Set(researchData.map((r) => r.year))).sort(
+    (a, b) => b - a
+  );
+  const authors = Array.from(
+    new Set(
+      researchData.flatMap((r) => r.authors.split(";").map((a) => a.trim()))
+    )
+  ).sort();
+  const institutions = Array.from(
+    new Set(researchData.map((r) => r.institution))
+  ).sort();
+  const coAuthors = Array.from(
+    new Set(researchData.flatMap((r) => r.coAuthors))
+  ).sort();
+  const languages = Array.from(
+    new Set(researchData.map((r) => r.language))
+  ).sort();
+
+  // apply filters similar to Home
+  let filtered = researchData
+    .filter((r) => !filterYear || r.year === Number(filterYear))
+    .filter((r) => !filterInstitution || r.institution === filterInstitution)
+    .filter((r) => !filterLanguage || r.language === filterLanguage)
+    .filter((r) => !filterAuthor || r.authors.includes(filterAuthor))
+    .filter((r) => !filterCoAuthor || r.coAuthors.includes(filterCoAuthor))
+    .filter(
+      (r) =>
+        !searchTerm || r.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  let sorted = [...filtered];
+  if (filterSortCitations === "desc")
+    sorted.sort((a, b) => b.citations - a.citations);
+  if (filterSortCitations === "asc")
+    sorted.sort((a, b) => a.citations - b.citations);
+
   return (
     <div className="dashboard-container">
-      {/* mostre o hambúrguer para logados em outros perfis */}
       {isLoggedIn && !isOwnProfile && (
         <button
           className="hamburger"
@@ -24,54 +77,49 @@ function Dashboard({ isLoggedIn, user }) {
           <FaBars />
         </button>
       )}
-
-      {/* sidebar sempre visível no próprio perfil ou quando toggled */}
-      {showSidebar && isLoggedIn && (
-        <aside className="sidebar">
-          <div className="brand">AbraoAbrao</div>
-          <div className="profile">
-            <img src={user.avatar || "/img/profile.png"} alt="Avatar" />
-            <span>{user.name || "Usuário da Silva"}</span>
-          </div>
-          <nav className="menu">
-            <a href="#">Visão Geral</a>
-            <a href="#">Minhas Pesquisas</a>
-            <a href="#">Configurações</a>
-            <a href="#">Sair</a>
-          </nav>
-        </aside>
-      )}
-
+      {showSidebar && isLoggedIn && <aside className="sidebar">…</aside>}
       <main className="main-content">
         <header className="main-header">
-          {/* só mostra título */}
           <h1>
             {isOwnProfile
               ? "Meu Dashboard"
               : `Perfil de ${authorId.replace(/-/g, " ")}`}
           </h1>
         </header>
-
         <section className="search-section">
-          <input type="text" placeholder="Buscar pesquisas acadêmicas..." />
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar pesquisas acadêmicas..."
+          />
           <FaSearch className="search-icon" />
         </section>
-
-        <section className="filter-bar">
-          <h3>Filtros</h3>
-          <hr />
-        </section>
-
+        <FilterPanel
+          years={years}
+          authors={authors}
+          institutions={institutions}
+          coAuthors={coAuthors}
+          languages={languages}
+          filterYear={filterYear}
+          setFilterYear={setFilterYear}
+          filterAuthor={filterAuthor}
+          setFilterAuthor={setFilterAuthor}
+          filterInstitution={filterInstitution}
+          setFilterInstitution={setFilterInstitution}
+          filterSortCitations={filterSortCitations}
+          setFilterSortCitations={setFilterSortCitations}
+          filterCoAuthor={filterCoAuthor}
+          setFilterCoAuthor={setFilterCoAuthor}
+          filterLanguage={filterLanguage}
+          setFilterLanguage={setFilterLanguage}
+        />
         <section className="results-panel">
-          <div className="placeholder">
-            {!isLoggedIn
-              ? "Faça login para ver suas pesquisas ou busque um autor abaixo."
-              : "Conteúdo do dashboard"}
-          </div>
+          {sorted.map((item, i) => (
+            <div key={i}>{item.title}</div>
+          ))}
         </section>
       </main>
     </div>
   );
 }
-
 export default Dashboard;
