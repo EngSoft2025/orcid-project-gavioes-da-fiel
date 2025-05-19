@@ -4,7 +4,6 @@ body {
   background: #f9fafb;
   color: #333;
 }
-
 .home-container {
   display: flex;
   flex-direction: column;
@@ -52,7 +51,7 @@ body {
 .search-wrapper input {
   width: 100%;
   padding: 12px 50px 12px 20px;
-  border-radius: 20px;
+  border-radius: 30px;
   border: 1px solid #d1d5db;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   font-size: 1rem;
@@ -68,16 +67,27 @@ body {
 }
 .filters-section {
   display: flex;
-  justify-content: space-between;
+  gap: 20px;
   align-items: center;
 }
-.filters-section h3 {
-  margin: 0;
-  text-transform: uppercase;
+.filters-section > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.filters-section label {
+  font-size: 0.9rem;
   color: #4b5563;
-  letter-spacing: 1px;
+}
+.filters-section select {
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  cursor: pointer;
 }
 .view-toggle {
+  margin-left: auto;
   display: inline-flex;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -147,4 +157,12 @@ body {
 .card-year {
   color: #6b7280;
   font-size: 0.9rem;
+}
+.author-link {
+  color: #0366d6;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+.author-link:hover {
+  text-decoration: underline;
 }
