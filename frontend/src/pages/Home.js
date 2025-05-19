@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
+import Cabecalho from "../components/Cabecalho.js"
 
 // Exemplo de dados de pesquisa acadêmica
 const researchData = [
@@ -32,13 +33,7 @@ function Home() {
 
   return (
     <div className="home-container">
-      <header className="home-header">
-        <h2 className="logo">AbraoAbrao</h2>
-        <nav className="nav-buttons">
-          <button onClick={() => navigate("/cadastro")}>Sign In</button>
-          <button onClick={() => navigate("/cadastro")}>Sign Up</button>
-        </nav>
-      </header>
+      <Cabecalho />
 
       <main className="home-main">
         <div className="search-wrapper">
