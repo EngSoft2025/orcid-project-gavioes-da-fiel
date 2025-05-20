@@ -20,7 +20,7 @@ def create_session(retries=5, backoff_factor=1.0,
     retry = Retry(
         total=retries,
         backoff_factor=backoff_factor,
-        status_forcelist=status_forcelist,
+        s tatus_forcelist=status_forcelist,
         allowed_methods=["GET"]
     )
     adapter = HTTPAdapter(max_retries=retry)
@@ -171,7 +171,6 @@ def search_work(title: str, max_results: int = 10):
     results = data.get("result", [])
     return [item.get("orcid-identifier", {}).get("path") for item in results]
 
-
 # Endpoints
 @app.get("/orcid/{orcid_id}/name")
 def get_name(orcid_id: str):
@@ -215,5 +214,9 @@ def get_all(orcid_id: str):
         "personal": format_personal(personal_d or {})
     }
 
-
-# Para rodar com: uvicorn orcid_api:app --reload --port 8000
+"""
+Para rodar:
+    1)  python3 -m venv venv
+    2)  source venv/bin/activate
+    3)  uvicorn api:app --reload --port 8000
+"""
