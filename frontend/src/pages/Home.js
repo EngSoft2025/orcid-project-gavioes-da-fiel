@@ -1,34 +1,50 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "../App.css";
-
-// Exemplo de dados de pesquisa acadêmica
-const researchData = [
-  {
-    title: "Estudo sobre Inteligência Artificial",
-    authors: "Silva, A.; Souza, B.",
-    year: 2023,
-  },
-  {
-    title: "Análise de Algoritmos de Machine Learning",
-    authors: "Costa, C.; Lima, D.",
-    year: 2022,
-  },
-  {
-    title: "Impacto da IA na Educação",
-    authors: "Rocha, E.; Martins, F.",
-    year: 2021,
-  },
-  {
-    title: "Redes Neurais em Diagnóstico Médico",
-    authors: "Almeida, G.; Fernanda, H.",
-    year: 2023,
-  },
-];
 
 function Home() {
   const navigate = useNavigate();
   const [view, setView] = useState("table");
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);       // pode ser 1 ou vários
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Regex simples para ORCID no formato 0000-0000-0000-0000
+  const orcidRegex = /^\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/;
+
+  const handleSearch = async () => {
+    const term = query.trim();
+    if (!term) return;
+    setLoading(true);
+    setError(null);
+    setResults([]);
+
+    try {
+      let data;
+      if (orcidRegex.test(term)) {
+        // Se for ORCID, chama get_name e embrulha num array
+        const res = await fetch(`http://localhost:8000/orcid/${term}/name`);
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const obj = await res.json(); // { full_name: "..." }
+        data = [{ orcid: term, full_name: obj.full_name }];
+      } else {
+        // Senão, trata como nome e chama search/name
+        const res = await fetch(
+          `http://localhost:8000/orcid/search/name?query=${encodeURIComponent(
+            term
+          )}&max_results=10`
+        );
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        data = await res.json(); // [ { orcid, full_name }, ... ]
+      }
+      setResults(data);
+    } catch (err) {
+      setError("Falha na busca: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="home-container">
@@ -41,14 +57,22 @@ function Home() {
       </header>
 
       <main className="home-main">
+        {/* ---------- Busca ---------- */}
         <div className="search-wrapper">
-          <input type="text" placeholder="Buscar pesquisas acadêmicas..." />
-          <span className="search-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Digite um ORCID ou nome de autor..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          />
+          <button onClick={handleSearch}>🔍</button>
         </div>
 
+        {/* ---------- Filtros ---------- */}
         <section className="filters-section">
           <h3>Filtros</h3>
-          {/* Aqui você pode implementar dropdowns ou checkboxes de área, ano, autores, etc. */}
+          {/* Dropdowns / checkboxes podem ir aqui */}
           <div className="view-toggle">
             <button
               className={view === "table" ? "active" : ""}
@@ -65,36 +89,54 @@ function Home() {
           </div>
         </section>
 
+        {/* ---------- Resultados ---------- */}
         <section className="results-section">
-          {view === "table" ? (
-            <table className="results-table">
-              <thead>
-                <tr>
-                  <th>Título</th>
-                  <th>Autores</th>
-                  <th>Ano</th>
-                </tr>
-              </thead>
-              <tbody>
-                {researchData.map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="title-cell">{item.title}</td>
-                    <td>{item.authors}</td>
-                    <td>{item.year}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="results-grid">
-              {researchData.map((item, idx) => (
-                <div key={idx} className="card">
-                  <div className="card-title">{item.title}</div>
-                  <div className="card-authors">{item.authors}</div>
-                  <div className="card-year">{item.year}</div>
+          {loading && <p>Carregando...</p>}
+          {error && <p className="error">{error}</p>}
+
+          {results.length > 0 && (
+            <>
+              <h3>Resultados da busca</h3>
+              {view === "table" ? (
+                <table className="results-table">
+                  <thead>
+                    <tr>
+                      <th>ORCID</th>
+                      <th>Nome completo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.map((item) => (
+                       <tr key={item.orcid}>
+                          <td>
+                            <Link to={`/author/${item.orcid}`}>
+                              {item.orcid}
+                            </Link>
+                          </td>
+                          <td>
+                            <Link to={`/author/${item.orcid}`}>
+                              {item.full_name}
+                            </Link>
+                          </td>
+                        </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="results-grid">
+                  {results.map((item) => (
+                     <Link
+                        key={item.orcid}
+                        to={`/author/${item.orcid}`}
+                        className="card"
+                      >
+                        <div className="card-title">{item.full_name}</div>
+                        <div className="card-subtitle">{item.orcid}</div>
+                      </Link>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </section>
       </main>
