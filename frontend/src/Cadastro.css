@@ -17,12 +17,7 @@ html {
 }
 .image-section {
   flex: 1;
-<<<<<<< HEAD
-  background: url("https://source.unsplash.com/random/800x600/?technology")
-    no-repeat center center;
-=======
   background: url("../public/img/loginpage.jpg") no-repeat center center;
->>>>>>> features/isa
   background-size: cover;
   position: relative;
 }
@@ -35,11 +30,7 @@ html {
   background: rgba(0, 0, 0, 0.3);
 }
 .form-section {
-<<<<<<< HEAD
-  flex: 1;
-=======
   flex: 0.5;
->>>>>>> features/isa
   background: #fff;
   display: flex;
   justify-content: center;
@@ -48,13 +39,6 @@ html {
 .form-container {
   width: 80%;
   max-width: 320px;
-<<<<<<< HEAD
-}
-.form-container h1 {
-  font-size: 1.8rem;
-  margin-bottom: 20px;
-  color: #111;
-=======
 
   margin: auto;
 }
@@ -62,34 +46,22 @@ html {
   font-size: 3rem;
   margin-bottom: 20px;
   color: #1f2937;
->>>>>>> features/isa
 }
 .form-container input {
   width: 100%;
   padding: 12px;
   margin-bottom: 15px;
-<<<<<<< HEAD
-  border: 1px solid #ccc;
-=======
   border: 1px solid #f3f4f6;
->>>>>>> features/isa
   border-radius: 5px;
   font-size: 1rem;
 }
 .form-container button {
-<<<<<<< HEAD
-  width: 100%;
-  padding: 12px;
-  background: #111;
-  color: #fff;
-=======
   display: block;
   margin: 20px auto;
   width: 50%;
   padding: 12px;
   background: #1f2937;
   color: #f3f4f6;
->>>>>>> features/isa
   border: none;
   border-radius: 5px;
   font-size: 1rem;
@@ -101,12 +73,6 @@ html {
   font-size: 0.9rem;
 }
 .form-container .toggle a {
-<<<<<<< HEAD
-  color: #007bff;
-  text-decoration: none;
-  cursor: pointer;
-}
-=======
   color: #1f2937;
 
   cursor: pointer;
@@ -118,4 +84,3 @@ html {
   cursor: pointer;
   margin: 0.5rem;
 }
->>>>>>> features/isa
