@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -6,8 +7,23 @@ import './App.css';
 import './Cadastro.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+=======
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import "./App.css";
+import "./Cadastro.css";
+import "./Dashboard.css";
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+>>>>>>> features/isa
 root.render(
   <BrowserRouter>
     <App />
   </BrowserRouter>
+<<<<<<< HEAD
 );
+=======
+);
+>>>>>>> features/isa
