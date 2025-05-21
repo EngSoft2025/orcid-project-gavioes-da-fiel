@@ -268,5 +268,10 @@ def get_all(orcid_id: str):
 Para rodar:
     1)  python3 -m venv venv
     2)  source venv/bin/activate
+    
+    Instale os requisitos:
+    pip install "uvicorn[standard]"
+    pip install requests
+
     3)  uvicorn api:app --reload --port 8000
 """
