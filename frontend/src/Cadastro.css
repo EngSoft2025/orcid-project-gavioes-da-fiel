@@ -17,8 +17,7 @@ html {
 }
 .image-section {
   flex: 1;
-  background: url("https://source.unsplash.com/random/800x600/?technology")
-    no-repeat center center;
+  background: url("../public/img/loginpage.jpg") no-repeat center center;
   background-size: cover;
   position: relative;
 }
@@ -31,7 +30,7 @@ html {
   background: rgba(0, 0, 0, 0.3);
 }
 .form-section {
-  flex: 1;
+  flex: 0.5;
   background: #fff;
   display: flex;
   justify-content: center;
@@ -40,25 +39,29 @@ html {
 .form-container {
   width: 80%;
   max-width: 320px;
+
+  margin: auto;
 }
 .form-container h1 {
-  font-size: 1.8rem;
+  font-size: 3rem;
   margin-bottom: 20px;
-  color: #111;
+  color: #1f2937;
 }
 .form-container input {
   width: 100%;
   padding: 12px;
   margin-bottom: 15px;
-  border: 1px solid #ccc;
+  border: 1px solid #f3f4f6;
   border-radius: 5px;
   font-size: 1rem;
 }
 .form-container button {
-  width: 100%;
+  display: block;
+  margin: 20px auto;
+  width: 50%;
   padding: 12px;
-  background: #111;
-  color: #fff;
+  background: #1f2937;
+  color: #f3f4f6;
   border: none;
   border-radius: 5px;
   font-size: 1rem;
@@ -70,7 +73,14 @@ html {
   font-size: 0.9rem;
 }
 .form-container .toggle a {
-  color: #007bff;
-  text-decoration: none;
+  color: #1f2937;
+
   cursor: pointer;
+}
+.hamburger {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  margin: 0.5rem;
 }

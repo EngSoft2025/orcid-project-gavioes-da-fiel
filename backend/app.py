@@ -65,8 +65,4 @@ def main():
             print("Opção inválida.\n")
 
 if __name__ == "__main__":
-<<<<<<< HEAD
     main()
-=======
-    main()
->>>>>>> features/isa
