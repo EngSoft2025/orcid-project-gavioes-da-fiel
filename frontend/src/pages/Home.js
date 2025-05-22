@@ -1,188 +1,119 @@
-import React, { useState, useEffect } from "react";
+// src/pages/Home.js
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaSearch, FaBars } from "react-icons/fa";
-import FilterPanel from "../components/filtros";
+import { FaSearch, FaUser, FaInfoCircle, FaSpinner } from "react-icons/fa";
+
 import "../App.css";
 
-function Home({ isLoggedIn }) {
+function Home({ isLoggedIn, user }) {
   const navigate = useNavigate();
-  const [researchData, setResearchData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // estados de filtro
-  const [filterYear, setFilterYear] = useState("");
-  const [filterAuthor, setFilterAuthor] = useState("");
-  const [filterInstitution, setFilterInstitution] = useState("");
-  const [filterSortCitations, setFilterSortCitations] = useState("");
-  const [filterCoAuthor, setFilterCoAuthor] = useState("");
-  const [filterLanguage, setFilterLanguage] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [view, setView] = useState("table");
-  const [showSidebar, setShowSidebar] = useState(false);
+  // Regex simples para ORCID no formato 0000-0000-0000-0000
+  const orcidRegex = /^\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/;
 
-  useEffect(() => {
-    fetch("/data/research.json")
-      .then((res) => {
-        if (!res.ok) throw new Error("Falha ao buscar dados");
-        return res.json();
-      })
-      .then((json) => setResearchData(json))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const handleSearch = async () => {
+    const term = query.trim();
+    if (!term) return;
+    setLoading(true);
+    setError(null);
+    setResults([]);
 
-  if (loading)
-    return (
-      <div className="home-container">
-        <p>Carregando…</p>
-      </div>
-    );
-  if (error)
-    return (
-      <div className="home-container">
-        <p>Erro: {error}</p>
-      </div>
-    );
-
-  // derive opções para filtros
-  const years = Array.from(new Set(researchData.map((r) => r.year))).sort(
-    (a, b) => b - a
-  );
-  const authors = Array.from(
-    new Set(
-      researchData.flatMap((r) => r.authors.split(";").map((a) => a.trim()))
-    )
-  ).sort();
-  const institutions = Array.from(
-    new Set(researchData.map((r) => r.institution))
-  ).sort();
-  const coAuthors = Array.from(
-    new Set(researchData.flatMap((r) => r.coAuthors))
-  ).sort();
-  const languages = Array.from(
-    new Set(researchData.map((r) => r.language))
-  ).sort();
-
-  // aplique filtros
-  let filtered = researchData
-    .filter((r) => !filterYear || r.year === Number(filterYear))
-    .filter((r) => !filterInstitution || r.institution === filterInstitution)
-    .filter((r) => !filterLanguage || r.language === filterLanguage)
-    .filter((r) => !filterAuthor || r.authors.includes(filterAuthor))
-    .filter((r) => !filterCoAuthor || r.coAuthors.includes(filterCoAuthor))
-    .filter(
-      (r) =>
-        !searchTerm || r.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-  // ordene por citações
-  let sorted = [...filtered];
-  if (filterSortCitations === "desc")
-    sorted.sort((a, b) => b.citations - a.citations);
-  if (filterSortCitations === "asc")
-    sorted.sort((a, b) => a.citations - b.citations);
+    try {
+      let data;
+      if (orcidRegex.test(term)) {
+        // Se for ORCID, chama get_name e embrulha num array
+        const res = await fetch(`http://localhost:8000/orcid/${term}/name`);
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const obj = await res.json(); // { full_name: "..." }
+        data = [{ orcid: term, full_name: obj.full_name }];
+      } else {
+        // Senão, trata como nome e chama search/name
+        const res = await fetch(
+          `http://localhost:8000/orcid/search/name?query=${encodeURIComponent(
+            term
+          )}&max_results=10`
+        );
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        data = await res.json(); // [ { orcid, full_name }, ... ]
+      }
+      setResults(data);
+    } catch (err) {
+      setError("Falha na busca: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="home-container">
       <header className="home-header">
         <h2 className="logo">AbraoAbrao</h2>
-        {isLoggedIn ? (
-          <button
-            className="hamburger"
-            onClick={() => setShowSidebar(!showSidebar)}
-          >
-            <FaBars />
-          </button>
-        ) : (
-          <nav className="nav-buttons">
-            <button onClick={() => navigate("/cadastro")}>Sign In</button>
-            <button onClick={() => navigate("/cadastro")}>Sign Up</button>
-          </nav>
-        )}
+        <nav className="nav-buttons">
+          <button onClick={() => navigate("/cadastro")}>Sign In</button>
+          <button onClick={() => navigate("/cadastro")}>Sign Up</button>
+        </nav>
       </header>
 
-      {isLoggedIn && showSidebar && <aside className="sidebar">…</aside>}
-
       <main className="home-main">
+        {/* Busca */}
         <div className="search-wrapper">
           <input
             type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar pesquisas acadêmicas..."
+            placeholder="Digite um ORCID ou nome de autor..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
           <FaSearch className="search-icon" />
+
+          {/* Sugestões */}
+          {(loading || results.length > 0 || error) && (
+            <ul className="suggestions-list">
+              {loading && (
+                <li className="suggestion-item loading">
+                  <FaSpinner className="spin suggestion-icon" />
+                  <span>Carregando...</span>
+                </li>
+              )}
+              {!loading && error && (
+                <li className="suggestion-item no-results">{error}</li>
+              )}
+              {!loading &&
+                !error &&
+                results.length === 0 &&
+                query.trim() !== "" && (
+                  <li className="suggestion-item no-results">
+                    Nenhum resultado encontrado
+                  </li>
+                )}
+              {!loading &&
+                !error &&
+                results.map((item) => (
+                  <li
+                    key={item.orcid}
+                    className="suggestion-item"
+                    onClick={() => navigate(`/dashboard/${item.orcid}`)}
+                  >
+                    <FaUser className="suggestion-icon" />
+                    <div className="suggestion-content">
+                      <span className="suggestion-name">{item.full_name}</span>
+                      <span className="suggestion-subtitle">{item.orcid}</span>
+                    </div>
+                    <FaInfoCircle className="info-icon" />
+                  </li>
+                ))}
+            </ul>
+          )}
         </div>
 
-        <FilterPanel
-          years={years}
-          authors={authors}
-          institutions={institutions}
-          coAuthors={coAuthors}
-          languages={languages}
-          filterYear={filterYear}
-          setFilterYear={setFilterYear}
-          filterAuthor={filterAuthor}
-          setFilterAuthor={setFilterAuthor}
-          filterInstitution={filterInstitution}
-          setFilterInstitution={setFilterInstitution}
-          filterSortCitations={filterSortCitations}
-          setFilterSortCitations={setFilterSortCitations}
-          filterCoAuthor={filterCoAuthor}
-          setFilterCoAuthor={setFilterCoAuthor}
-          filterLanguage={filterLanguage}
-          setFilterLanguage={setFilterLanguage}
-        />
-
-        <section className="results-section">
-          {view === "table" ? (
-            <table className="results-table">
-              <thead>
-                <tr>
-                  <th>Título</th>
-                  <th>Autores</th>
-                  <th>Ano</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map((item, i) => (
-                  <tr key={i}>
-                    <td className="title-cell">{item.title}</td>
-                    <td>
-                      {item.authors.split(";").map((name) => {
-                        const id = name
-                          .trim()
-                          .toLowerCase()
-                          .replace(/\s+/g, "-");
-                        return (
-                          <span
-                            key={id}
-                            className="author-link"
-                            onClick={() => navigate(`/dashboard/${id}`)}
-                          >
-                            {name.trim()}
-                          </span>
-                        );
-                      })}
-                    </td>
-                    <td>{item.year}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="results-grid">
-              {sorted.map((item, i) => (
-                <div key={i} className="card">
-                  <div className="card-title">{item.title}</div>
-                  <div className="card-authors">{item.authors}</div>
-                  <div className="card-year">{item.year}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        {/* Se precisar de seção de resultados separada, descomente abaixo */}
+        {/* <section className="results-section">
+          {error && <p className="error">{error}</p>}
+        </section> */}
       </main>
     </div>
   );

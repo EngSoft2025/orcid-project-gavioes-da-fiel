@@ -6,27 +6,17 @@ import Dashboard from "./pages/Dashboard";
 import Cadastro from "./pages/Cadastro";
 
 function App() {
-  // null = visitante; objeto = pesquisador logado
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // aqui você pode checar um token/localStorage para manter login
-    // ex: const token = localStorage.getItem('token');
-    // autenticar e setar setUser({ id, name, avatar })
+    // checa token/localStorage…
   }, []);
 
   return (
     <Routes>
-      {/* Página inicial de busca */}
-      <Route
-        path="/"
-        element={<Home isLoggedIn={!!user} user={user || {}} />}
-      />
-
-      {/* Cadastro / Login */}
+      <Route path="/" element={<Home isLoggedIn={!!user} user={user || {}} />} />
       <Route path="/cadastro" element={<Cadastro onAuth={setUser} />} />
-
-      {/* Dashboard de autor/pesquisador */}
+      {/* Alinha a rota com o seu Dashboard.js */}
       <Route
         path="/dashboard/:authorId"
         element={<Dashboard isLoggedIn={!!user} user={user || {}} />}
