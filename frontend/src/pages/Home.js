@@ -1,13 +1,14 @@
 // src/pages/Home.js
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { FaSearch, FaUser, FaInfoCircle, FaSpinner } from "react-icons/fa";
+
 import "../App.css";
 
 function Home({ isLoggedIn, user }) {
   const navigate = useNavigate();
-  const [view, setView] = useState("table");
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);       // pode ser 1 ou vários
+  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -58,7 +59,7 @@ function Home({ isLoggedIn, user }) {
       </header>
 
       <main className="home-main">
-        {/* ---------- Busca ---------- */}
+        {/* Busca */}
         <div className="search-wrapper">
           <input
             type="text"
@@ -67,79 +68,52 @@ function Home({ isLoggedIn, user }) {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
-          <button onClick={handleSearch}>🔍</button>
+          <FaSearch className="search-icon" />
+
+          {/* Sugestões */}
+          {(loading || results.length > 0 || error) && (
+            <ul className="suggestions-list">
+              {loading && (
+                <li className="suggestion-item loading">
+                  <FaSpinner className="spin suggestion-icon" />
+                  <span>Carregando...</span>
+                </li>
+              )}
+              {!loading && error && (
+                <li className="suggestion-item no-results">{error}</li>
+              )}
+              {!loading &&
+                !error &&
+                results.length === 0 &&
+                query.trim() !== "" && (
+                  <li className="suggestion-item no-results">
+                    Nenhum resultado encontrado
+                  </li>
+                )}
+              {!loading &&
+                !error &&
+                results.map((item) => (
+                  <li
+                    key={item.orcid}
+                    className="suggestion-item"
+                    onClick={() => navigate(`/dashboard/${item.orcid}`)}
+                  >
+                    <FaUser className="suggestion-icon" />
+                    <div className="suggestion-content">
+                      <span className="suggestion-name">{item.full_name}</span>
+                      <span className="suggestion-subtitle">{item.orcid}</span>
+                    </div>
+                    <FaInfoCircle className="info-icon" />
+                  </li>
+                ))}
+            </ul>
+          )}
         </div>
 
-        {/* ---------- Filtros ---------- */}
-        <section className="filters-section">
-          <h3>Filtros</h3>
-          {/* Dropdowns / checkboxes podem ir aqui */}
-          <div className="view-toggle">
-            <button
-              className={view === "table" ? "active" : ""}
-              onClick={() => setView("table")}
-            >
-              ☰
-            </button>
-            <button
-              className={view === "grid" ? "active" : ""}
-              onClick={() => setView("grid")}
-            >
-              ☐
-            </button>
-          </div>
-        </section>
-
-        {/* ---------- Resultados ---------- */}
-        <section className="results-section">
-          {loading && <p>Carregando...</p>}
+        {/* Se precisar de seção de resultados separada, descomente abaixo */}
+        {/* <section className="results-section">
           {error && <p className="error">{error}</p>}
-
-          {results.length > 0 && (
-            <>
-              <h3>Resultados da busca</h3>
-              {view === "table" ? (
-                <table className="results-table">
-                  <thead>
-                    <tr>
-                      <th>ORCID</th>
-                      <th>Nome completo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.map((item) => (
-                      <tr key={item.orcid}>
-                        <td>
-                          <Link to={`/dashboard/${item.orcid}`}>
-                            {item.orcid}
-                          </Link>
-                        </td>
-                        <td>
-                          <Link to={`/dashboard/${item.orcid}`}>
-                            {item.full_name}
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="results-grid">
-                  {results.map((item) => (
-                    <Link
-                      key={item.orcid}
-                      to={`/author/${item.orcid}`}
-                      className="card"
-                    >
-                      <div className="card-title">{item.full_name}</div>
-                      <div className="card-subtitle">{item.orcid}</div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </section>
+        </section> */}
       </main>
     </div>
   );
