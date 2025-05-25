@@ -2,10 +2,11 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 import html
+from pydantic import BaseModel, EmailStr
 from urllib3.util import Retry
 from requests.adapters import HTTPAdapter
 from typing import List, Dict
-
+import db
 # Configurações
 BASE_URL = "https://pub.orcid.org/v3.0"
 HEADERS = {"Accept": "application/json"}
@@ -14,7 +15,13 @@ TIMEOUT = 10
 # Cria sessão com retries
 def create_session(retries=5, backoff_factor=1.0,
                    status_forcelist=(429, 500, 502, 503, 504)):
+
+    try:
+        db.init_db()
+    except Exception as e:
+        print(f"[WARN] Could not initialize database: {e}")
     session = requests.Session()
+
     retry = Retry(
         total=retries,
         backoff_factor=backoff_factor,
@@ -284,6 +291,21 @@ def format_personal(data: dict):
 
     return result
 
+# classes auxiliares do login 
+class SignUpIn(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+
+class SignInIn(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserOut(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+    created_at: str 
 # Inicializa FastAPI
 app = FastAPI()
 app.add_middleware(
@@ -442,6 +464,53 @@ def filter_works_by_citations(orcid_id: str):
     works.sort(key=lambda w: w["citations"], reverse=True)
 
     return {"works": works}
+
+@app.post("/signup", status_code=201)
+def signup(payload: SignUpIn):
+    """
+    Create a new user if the e-mail is not taken.
+    """
+    if db.get_user_by_email(payload.email):
+        raise HTTPException(
+            status_code=409,
+            detail="E-mail already registered."
+        )
+
+    user_id = db.create_user(payload.name, payload.email, payload.password)
+    user_row = db.get_user_by_email(payload.email)  # (id, name, email, created_at)
+
+    return {
+        "user": {
+            "id": user_row[0],
+            "name": user_row[1],
+            "email": user_row[2],
+            "created_at": user_row[3]
+        }
+    }
+
+
+@app.post("/signin")
+def signin(payload: SignInIn):
+    """
+    Authenticate and return the user record (minus password hash).
+    """
+    user = db.authenticate_user(payload.email, payload.password)
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid e-mail or password."
+        )
+
+    # user == (id, name, email, created_at)
+    return {
+        "user": {
+            "id": user[0],
+            "name": user[1],
+            "email": user[2],
+            "created_at": user[3]
+        }
+    }
+
 
 """
 Para rodar:
