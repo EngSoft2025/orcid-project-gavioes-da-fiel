@@ -1,3 +1,4 @@
+<!-- static/index.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -85,27 +86,28 @@
             if (!orcid) return;
 
             try {
-                const res = await fetch(`http://localhost:8000/orcid/${orcid}/all`);
-                if (!res.ok) throw new Error("Erro ao buscar dados");
+                const res = await fetch(`/orcid/${orcid}/all`);
+                if (!res.ok) throw new Error(res.statusText);
                 const data = await res.json();
                 mostrarDadosCompletos(data);
             } catch (err) {
-                alert("Erro ao buscar dados completos.");
+                alert("Erro ao buscar dados completos: " + err.message);
                 console.error(err);
             }
         }
 
         async function filtrarPorPalavraChave() {
             const orcid = getOrcid();
-            const keyword = document.getElementById("keywordInput").value.trim();
-            if (!orcid || !keyword) return alert("Digite ORCID e palavra-chave");
+            const kw = document.getElementById("keywordInput").value.trim();
+            if (!orcid || !kw) return alert("Digite ORCID e palavra-chave");
 
             try {
-                const res = await fetch(`http://localhost:8000/orcid/${orcid}/works/filter_by_keyword?keyword=${encodeURIComponent(keyword)}`);
+                const res = await fetch(`/orcid/${orcid}/works/filter_by_keyword?keyword=${encodeURIComponent(kw)}`);
+                if (!res.ok) throw new Error(res.statusText);
                 const data = await res.json();
                 mostrarObras(data.works);
             } catch (err) {
-                alert("Erro ao filtrar por palavra-chave.");
+                alert("Erro ao filtrar por palavra-chave: " + err.message);
                 console.error(err);
             }
         }
@@ -116,11 +118,12 @@
             if (!orcid || !ano) return alert("Digite ORCID e ano");
 
             try {
-                const res = await fetch(`http://localhost:8000/orcid/${orcid}/works/filter_by_year?year=${ano}`);
+                const res = await fetch(`/orcid/${orcid}/works/filter_by_year?year=${ano}`);
+                if (!res.ok) throw new Error(res.statusText);
                 const data = await res.json();
                 mostrarObras(data.works);
             } catch (err) {
-                alert("Erro ao filtrar por ano.");
+                alert("Erro ao filtrar por ano: " + err.message);
                 console.error(err);
             }
         }
@@ -130,11 +133,12 @@
             if (!orcid) return;
 
             try {
-                const res = await fetch(`http://localhost:8000/orcid/${orcid}/works/filter_by_citations`);
+                const res = await fetch(`/orcid/${orcid}/works/filter_by_citations`);
+                if (!res.ok) throw new Error(res.statusText);
                 const data = await res.json();
                 mostrarObras(data.works);
             } catch (err) {
-                alert("Erro ao filtrar por citações.");
+                alert("Erro ao filtrar por citações: " + err.message);
                 console.error(err);
             }
         }
@@ -142,9 +146,7 @@
         function mostrarDadosCompletos(data) {
             document.getElementById("resultado").style.display = "block";
 
-            const nome = data.name?.["given-names"]?.value + " " + data.name?.["family-name"]?.value;
-            document.getElementById("nome").innerText = nome || "Não encontrado";
-
+            document.getElementById("nome").innerText = data.personal?.full_name || "Não encontrado";
             document.getElementById("biografia").innerText = data.personal?.biography || "Sem biografia";
 
             const kwList = document.getElementById("keywords");
@@ -162,9 +164,24 @@
         }
 
         function mostrarObras(works) {
-            const obrasFormatadas = (works || []).map(w =>
-                `📘 ${w.title} (${w.year})\nTipo: ${w.type || "N/A"}\nDOI: ${w.doi || "N/A"}\nURL: ${w.url || "N/A"}\nCitações: ${w.citations ?? "?"}`
-            ).join("\n\n");
+            document.getElementById("resultado").style.display = "block";
+
+            const obrasFormatadas = (works || []).map(w => {
+                const coautores = (w.coauthors || []).map(c => {
+                    const nome = c.name || "Desconhecido";
+                    const orcid = c.orcid ? ` (ORCID: ${c.orcid})` : "";
+                    return `- ${nome}${orcid}`;
+                }).join("\n") || "Nenhum informado";
+
+                return `📘 ${w.title} (${w.year})
+Tipo: ${w.type || "N/A"}
+DOI: ${w.doi || "N/A"}
+URL: ${w.url || "N/A"}
+Citações: ${w.citations ?? "?"}
+Coautores:
+${coautores}`;
+            }).join("\n\n");
+
             document.getElementById("obras").innerText = obrasFormatadas || "Nenhuma obra encontrada.";
         }
 
