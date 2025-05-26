@@ -1,53 +1,64 @@
+/* src/App.css */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
   background: #f9fafb;
   color: #333;
 }
+
 .home-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 90vh;
 }
+
 .home-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px 40px;
   background: #fff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
+
 .logo {
+  margin: 0;
   font-size: 1.5rem;
-  font-weight: bold;
-  color: #1f2937;
+  color: #111;
 }
+
 .nav-buttons button {
-  margin-left: 10px;
+  margin-left: 16px;
   padding: 8px 16px;
   border: none;
-  background: #1f2937;
-  color: #f3f4f6;
   border-radius: 4px;
+  background: #111;
+  color: #fff;
   cursor: pointer;
   transition: background 0.2s;
 }
+
 .nav-buttons button:hover {
-  background: #374151;
+  background: #333;
 }
+
 .home-main {
   flex: 1;
-  padding: 40px;
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
 }
+
 .search-wrapper {
   width: 80%;
-  max-width: 800px;
+  max-width: 600px;
   margin: 0 auto;
   position: relative;
 }
+
+/* input de busca */
 .search-wrapper input {
   width: 100%;
   padding: 12px 50px 12px 20px;
@@ -55,7 +66,14 @@ body {
   border: 1px solid #d1d5db;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   font-size: 1rem;
+  outline: none;
 }
+
+.search-wrapper input:focus {
+  border-color: #111;
+}
+
+/* ícone de lupa dentro do input */
 .search-icon {
   position: absolute;
   right: 20px;
@@ -65,104 +83,83 @@ body {
   font-size: 1.2rem;
   color: #6b7280;
 }
-.filters-section {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-}
-.filters-section > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.filters-section label {
-  font-size: 0.9rem;
-  color: #4b5563;
-}
-.filters-section select {
-  padding: 6px 10px;
-  border-radius: 4px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  cursor: pointer;
-}
-.view-toggle {
-  margin-left: auto;
-  display: inline-flex;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  overflow: hidden;
-}
-.view-toggle button {
-  padding: 8px 12px;
-  border: none;
-  background: #fff;
-  cursor: pointer;
-  font-size: 1.1rem;
-  transition: background 0.2s;
-}
-.view-toggle button.active,
-.view-toggle button:hover {
-  background: #e5e7eb;
-}
-.results-section {
-  flex: 1;
-  overflow-x: auto;
-}
-.results-table {
+
+/* lista de sugestões */
+.suggestions-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
   width: 100%;
-  border-collapse: collapse;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-.results-table th,
-.results-table td {
-  padding: 12px 15px;
-  text-align: left;
-  border-bottom: 1px solid #e5e7eb;
-}
-.results-table th {
-  background: #f3f4f6;
-  font-weight: 600;
-}
-.results-table tbody tr:hover {
-  background: #f9fafb;
-}
-.title-cell {
-  font-weight: bold;
-}
-.results-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
-}
-.card {
-  background: #fff;
-  padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 10;
+  padding: 0;
+  list-style: none;
+}
+
+/* cada item da lista */
+.suggestion-item {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.card:hover {
-  transform: translateY(-5px);
-}
-.card-title {
-  font-weight: bold;
-  color: #111827;
-}
-.card-authors,
-.card-year {
-  color: #6b7280;
-  font-size: 0.9rem;
-}
-.author-link {
-  color: #0366d6;
+  align-items: center;
+  padding: 12px 16px;
   cursor: pointer;
-  margin-right: 0.5rem;
+  transition: background 0.1s;
 }
-.author-link:hover {
-  text-decoration: underline;
+
+.suggestion-item:hover {
+  background: #f3f4f6;
+}
+
+/* ícone do usuário */
+.suggestion-icon {
+  margin-right: 12px;
+  font-size: 1.2rem;
+  color: #6b7280;
+}
+
+/* conteúdo principal e subtítulo */
+.suggestion-content {
+  flex: 1;
+}
+
+.suggestion-name {
+  display: block;
+  font-weight: 500;
+  font-size: 1rem;
+  color: #111;
+}
+
+.suggestion-subtitle {
+  display: block;
+  font-size: 0.875rem;
+  color: #6b7280; /* cinza mais claro para o ORCID */
+}
+
+/* ícone de informação à direita */
+.info-icon {
+  margin-left: 12px;
+  font-size: 1rem;
+  color: #9ca3af;
+}
+
+/* estado de carregamento */
+.suggestion-item.loading,
+.suggestion-item.no-results {
+  justify-content: center;
+  color: #6b7280;
+}
+
+/* animação de loading */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
