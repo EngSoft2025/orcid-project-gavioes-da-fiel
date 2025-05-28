@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { useLocation } from 'react-router-dom';
 
 function Cadastro() {
-  const [isLogin, setIsLogin] = useState(true);
+  const location = useLocation();
+  const [isLogin, setIsLogin] = useState(location.state?.isLogin ?? false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");  // Only used for signup
   const [password, setPassword] = useState("");
