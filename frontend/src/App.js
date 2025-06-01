@@ -14,7 +14,10 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<Home isLoggedIn={!!user} user={user || {}} />} />
+      <Route
+        path="/"
+        element={<Home isLoggedIn={!!user} user={user || {}} />}
+      />
       <Route path="/cadastro" element={<Cadastro onAuth={setUser} />} />
       {/* Alinha a rota com o seu Dashboard.js */}
       <Route
