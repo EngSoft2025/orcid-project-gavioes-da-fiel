@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { FaSearch, FaBars } from "react-icons/fa";
 import "../Dashboard.css";
+import LoadingDrop from "../components/LoadingDrop";
 
 function Dashboard({ isLoggedIn, user }) {
   const { authorId } = useParams();
@@ -30,7 +31,7 @@ function Dashboard({ isLoggedIn, user }) {
     fetchAll();
   }, [authorId]);
 
-  if (loading) return <p>Carregando perfil...</p>;
+  if (loading) return <LoadingDrop />;
   if (error) return <p className="error">Erro: {error}</p>;
   if (!data) return null;
 
@@ -41,10 +42,7 @@ function Dashboard({ isLoggedIn, user }) {
 
   return (
     <div className="dashboard-container">
-      <button
-        className="hamburger"
-        onClick={() => setShowSidebar((v) => !v)}
-      >
+      <button className="hamburger" onClick={() => setShowSidebar((v) => !v)}>
         <FaBars />
       </button>
 
@@ -87,11 +85,7 @@ function Dashboard({ isLoggedIn, user }) {
               <ul>
                 {data.personal.urls.map((url, i) => (
                   <li key={i}>
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <a href={url} target="_blank" rel="noopener noreferrer">
                       {url}
                     </a>
                   </li>
