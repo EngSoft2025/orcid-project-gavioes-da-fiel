@@ -1,17 +1,36 @@
 // src/pages/Dashboard.js
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { FaSearch, FaBars } from "react-icons/fa";
+import { FaSearch, FaMoon, FaSun, FaFilter } from "react-icons/fa";
 import "../Dashboard.css";
 import LoadingDrop from "../components/LoadingDrop";
+import Sidebar from "../components/Sidebar";
+import ChartsSection from "../components/ChartsSection";
 
-function Dashboard({ isLoggedIn, user }) {
+
+
+function Dashboard({ }) {
   const { authorId } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showSidebar, setShowSidebar] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [selectedTab, setTab] = useState("Biografia");
+  const [yearFilter, setYearFilter] = useState("");
+  const [selectedKeywords, setSelectedKeywords] = useState([]);
+  
+
+
+
+  useEffect(() => {
+    document.body.classList.toggle("dark", darkMode);
+  }, [darkMode]);
+
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => !prev);
+  };
 
   useEffect(() => {
     async function fetchAll() {
@@ -34,134 +53,164 @@ function Dashboard({ isLoggedIn, user }) {
   if (loading) return <LoadingDrop />;
   if (error) return <p className="error">Erro: {error}</p>;
   if (!data) return null;
+  
+  console.log(data);
 
-  // works come from format_works → [ { title, year }, … ]
-  const filteredWorks = data.works.filter((w) =>
-    w.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+
+  const filteredWorks = data.works.filter((w) => {
+      const matchesSearch = w.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesYear = !yearFilter || w.year.toString() === yearFilter;
+      return matchesSearch && matchesYear;
+    });
+    
 
   return (
-    <div className="dashboard-container">
-      <button className="hamburger" onClick={() => setShowSidebar((v) => !v)}>
-        <FaBars />
-      </button>
+      <div className="dashboard-container">
+        <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} data={data} />
 
-      {showSidebar && (
-        <aside className="sidebar">
-          <h2>{data.personal.full_name}</h2>
+        <div>
+          <header className="home-header">
+            <div className="logo">
+              <img src="../img/logo.png" alt="Logo da Plataforma" className="logo-img" />
+            </div>
+            <div className="header-controls">
+              <button className="theme-toggle" onClick={toggleDarkMode}>
+                {darkMode ? <FaSun /> : <FaMoon />}
+              </button>
+            </div>
+          </header>
+        </div>
 
-          {data.personal.biography && (
-            <>
-              <h3>Biografia</h3>
-              <p>{data.personal.biography}</p>
-            </>
-          )}
+        <main className="main-content">
+          {/* Cabeçalho do Perfil */}
+          <div className="profile-box">
+              <h1>{data.personal.full_name}</h1>
 
-          {data.keywords?.length > 0 && (
-            <>
-              <h3>Palavras-chave</h3>
-              <ul>
-                {data.keywords.map((kw, i) => (
-                  <li key={i}>{kw}</li>
-                ))}
-              </ul>
-            </>
-          )}
+              {/* Empregos ativos */}
+              
+              {data.employments?.some(e => !e.end_date) && (
+                  <div className="active-jobs">
+                    {data.employments
+                      .filter(e => !e.end_date)
+                      .map((e, i) => (
+                        <div key={i} className="job-entry">
+                          <p className="position">{e.role_title}</p>
+                          <p className="affiliation">{e.organization}</p>
+                        </div>
+                      ))}
+                  </div>
+                )}
 
-          {data.personal.other_names?.length > 0 && (
-            <>
-              <h3>Outros nomes</h3>
-              <ul>
-                {data.personal.other_names.map((n, i) => (
-                  <li key={i}>{n}</li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {data.personal.urls?.length > 0 && (
-            <>
-              <h3>URLs</h3>
-              <ul>
-                {data.personal.urls.map((url, i) => (
-                  <li key={i}>
-                    <a href={url} target="_blank" rel="noopener noreferrer">
-                      {url}
+              {/* Palavras-chave */}
+              {data.keywords?.length > 0 && (
+                <div className="keywords">
+                  {data.keywords.map((kw, i) => (
+                    <span key={i} className="keyword">
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {data.personal?.urls?.length > 0 && (
+                  <div className="url-container">
+                    <a 
+                      href={data.personal.urls[0]} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="url-button"
+                    >
+                      {data.personal.urls[0].includes('contact') ? 'Contact' : 'Site'}
                     </a>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+                  </div>
+                )}
+              
 
-          {data.personal.emails?.length > 0 && (
-            <>
-              <h3>E-mails</h3>
-              <ul>
-                {data.personal.emails.map((e, i) => (
-                  <li key={i}>{e}</li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {data.personal.countries?.length > 0 && (
-            <>
-              <h3>Países</h3>
-              <ul>
-                {data.personal.countries.map((c, i) => (
-                  <li key={i}>{c}</li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {data.personal.external_ids?.length > 0 && (
-            <>
-              <h3>Identificadores externos</h3>
-              <ul>
-                {data.personal.external_ids.map((ex, i) => (
-                  <li key={i}>
-                    {ex.type}: {ex.value}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </aside>
-      )}
-
-      <main className="main-content">
-        <header className="main-header">
-          <h1>{data.personal.full_name}</h1>
-        </header>
-
-        <section className="search-section">
-          <input
-            type="text"
-            placeholder="Buscar trabalhos por título..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <FaSearch className="search-icon" />
-        </section>
-
-        <section className="results-panel">
-          {filteredWorks.length > 0 ? (
-            <ul>
-              {filteredWorks.map((w, i) => (
-                <li key={i}>
-                  {w.title} <em>({w.year})</em>
-                </li>
+            </div>
+          {/* Abas */}
+          <div className="tabs">
+              {["Biografia", "Publicações", "Métricas"].map((tab, index, array) => (
+                <button
+                  key={tab}
+                  onClick={() => setTab(tab)}
+                  className={`tab-button ${tab === selectedTab ? "active" : ""} ${
+                    index === 0 ? "first" : index === array.length - 1 ? "last" : "middle"
+                  }`}
+                >
+                  {tab}
+                </button>
               ))}
-            </ul>
-          ) : (
-            <p>Nenhum trabalho encontrado.</p>
-          )}
-        </section>
-      </main>
-    </div>
-  );
+            </div>
+
+          {/* Conteúdo Condicional por Aba */}
+          <div className="tab-content">
+            {selectedTab === "Biografia" && (
+                <div className="bio-section">
+                  {data.personal.biography && (
+                    <div className="bio-content">
+                      <h3 className="bio-title">Biografia</h3>
+                      <p className="bio-text">
+                        {data.personal.biography}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+            {selectedTab === "Publicações" && (
+              <>
+                <section className="search-section">
+                  <input
+                    type="text"
+                    placeholder="Buscar trabalhos por título..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <FaSearch className="search-icon" />
+                </section>
+
+                <div className="filters-container">
+                  {/* Year filter dropdown on the left */}
+                  <div className="filter-group">
+                    <label>Ano</label>
+                    <select 
+                      onChange={(e) => setYearFilter(e.target.value)}
+                      className="year-filter"
+                    >
+                      <option value="">Todos</option>
+                      {Array.from(new Set(data.works.map(w => w.year))).sort((a, b) => b - a).map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <section className="results-panel">
+                  {filteredWorks.length > 0 ? (
+                    <ul>
+                      {filteredWorks.map((w, i) => (
+                        <li key={i}>
+                          {w.title} <em>({w.year})</em>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>Nenhum trabalho encontrado.</p>
+                  )}
+                </section>
+              </>
+            )}
+
+            {selectedTab === "Métricas" && (
+             <div className="metrics-section">
+                <div className="metric-card">Crescimento de Produção Científica</div>
+                <ChartsSection works={data.works} />
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    );
+
 }
 
 export default Dashboard;
