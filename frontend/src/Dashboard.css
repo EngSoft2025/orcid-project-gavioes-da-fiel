@@ -784,3 +784,8 @@ body.dark .profile-box {
   background-color: #0b131a;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
+
+body.dark .education-block,
+body.dark .employment-entry {
+  border-left: 3px solid #3b82f6;
+}
