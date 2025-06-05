@@ -71,7 +71,7 @@ export default function Sidebar({ open, setOpen, data }) {
           <div className="sidebarlogo">
             {open && (
               <img
-                src="../img/white_logo.png"
+                src="../img/dark-logo.png"
                 alt="Logo da Plataforma"
                 className="logo-img"
               />
