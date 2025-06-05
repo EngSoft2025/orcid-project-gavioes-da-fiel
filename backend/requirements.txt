@@ -2,3 +2,5 @@ fastapi
 uvicorn
 requests
 pydantic[email]
+nltk
+rake_nltk 
