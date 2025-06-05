@@ -1,6 +1,10 @@
 # endpoints.py
 
-from typing import List, Dict
+
+from typing import List, Dict, Any
+from collections import Counter
+import re
+import requests
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,13 +21,13 @@ from api_clients.orcid_client import (
     format_works as format_orcid_works,
     format_works_with_contributors as format_orcid_works_with_contributors 
 )
-from api_clients.openalex_client import (
-    fetch_works_openalex,
-    format_works_from_openalex
-)
 
-from db.db import get_user_by_email, create_user, authenticate_user
-from pydantic import BaseModel, EmailStr
+from api_clients.openalex_client import (
+    parse_orcid_data,
+    fetch_citations,
+    count_by_year,
+    compute_metrics
+)
 
 app = FastAPI()
 
@@ -35,22 +39,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# classes auxiliares do login 
-class SignUpIn(BaseModel):
-    name: str
-    email: EmailStr
-    password: str
-
-class SignInIn(BaseModel):
-    email: EmailStr
-    password: str
-
-class UserOut(BaseModel):
-    id: int
-    name: str
-    email: EmailStr
-    created_at: str 
 # Inicializa FastAPI
 app = FastAPI()
 app.add_middleware(
@@ -188,14 +176,64 @@ def get_all(orcid_id: str):
     }
 
 @app.get("/orcid/{orcid_id}/works/filter_by_keyword")
-def filter_works_by_keyword(orcid_id: str, keyword: str = Query(..., description="Palavra-chave para filtrar títulos")):
-    """
-    Retorna obras cujo título contenha a palavra-chave.
-    """
-    raw   = fetch_orcid(orcid_id, section="works") or {}
-    works = format_orcid_works(raw)
-    filtered = [w for w in works if keyword.lower() in w["title"].lower()]
-    return {"works": filtered}
+def filter_works_by_keyword(
+    orcid_id: str,
+    keyword: str = Query(..., description="Keyword to search for in work titles, abstracts, and keywords.")
+):
+    try:
+        raw_works_data = fetch_orcid(orcid_id, section="works") 
+
+        if not raw_works_data or not raw_works_data.get("group"):
+            return {"keyword_searched": keyword, "works": []}
+        
+        all_works = format_orcid_works(raw_works_data)
+      
+        if not all_works: # If format_orcid_works returns an empty list or None
+            return {"keyword_searched": keyword, "works": []}
+
+        filtered_works = []
+        search_keyword_lower = keyword.lower()
+
+        for i, work_item in enumerate(all_works): # Iterate through each work dictionary
+            
+            match_found = False 
+
+            work_title = work_item.get("title") # Safely get title, could be None
+            if work_title and isinstance(work_title, str):
+                if search_keyword_lower in work_title.lower():
+                    match_found = True
+            if not match_found:
+                work_abstract = work_item.get("short_description") or work_item.get("abstract")
+                if work_abstract and isinstance(work_abstract, str):
+                    if search_keyword_lower in work_abstract.lower():
+                        match_found = True
+            
+            if not match_found:
+                work_keywords_data = work_item.get("keywords") # Get keywords data
+
+                if work_keywords_data and isinstance(work_keywords_data, list):
+                    for kw_entry in work_keywords_data:
+                        keyword_to_check = None
+                        if isinstance(kw_entry, str):
+                            keyword_to_check = kw_entry
+                        elif isinstance(kw_entry, dict):
+                            keyword_to_check = kw_entry.get("content") 
+                        
+                        if keyword_to_check and isinstance(keyword_to_check, str):
+                            if search_keyword_lower in keyword_to_check.lower():
+                                match_found = True
+                                break # Found in this work's keywords, move to next work
+                        
+            if match_found:
+                filtered_works.append(work_item)
+            
+        return {"keyword_searched": keyword, "works": filtered_works}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while searching works: {str(e)}")
 
 @app.get("/orcid/{orcid_id}/works/filter_by_year")
 def filter_works_by_year(
@@ -272,52 +310,47 @@ def filter_works_by_citations(orcid_id: str):
     return {"works": works}
 
 
-
-@app.post("/signup", status_code=201)
-def signup(payload: SignUpIn):
+@app.get("/orcid/{orcid_id}/metrics")
+def get_orcid_metrics(orcid_id: str):
     """
-    Create a new user if the e-mail is not taken.
+    Retorna métricas agregadas do autor ORCID, incluindo:
+    - total_publicacoes
+    - total_citacoes
+    - media_citacoes
+    - fator_de_impacto (últimos 2 anos)
+    - h_index
+    - i10_index
+    - pesquisa_mais_citada
     """
-    if get_user_by_email(payload.email):
-        raise HTTPException(
-            status_code=409,
-            detail="E-mail already registered."
-        )
+    orcid_data = fetch_orcid(orcid_id, section="works")
+    ids, no_id_years = parse_orcid_data(orcid_data)
+    citations = fetch_citations(ids)
 
-    user_id = create_user(payload.name, payload.email, payload.password)
-    user_row = get_user_by_email(payload.email)  # (id, name, email, created_at)
+    years, pubs_y, cites_y = count_by_year(ids, no_id_years, citations)
+    metrics = compute_metrics(years, pubs_y, cites_y, ids, no_id_years, citations)
+    return metrics
 
-    return {
-        "user": {
-            "id": user_row[0],
-            "name": user_row[1],
-            "email": user_row[2],
-            "created_at": user_row[3]
-        }
+@app.get("/orcid/{orcid_id}/stats")
+def get_orcid_stats(orcid_id: str):
+    """
+    Retorna a série temporal para construção de gráfico:
+    {
+      "years": [...],
+      "publications": [...],
+      "citations": [...]
     }
-
-@app.post("/signin")
-def signin(payload: SignInIn):
     """
-    Authenticate and return the user record (minus password hash).
-    """
-    user = authenticate_user(payload.email, payload.password)
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid e-mail or password."
-        )
+    orcid_data = fetch_orcid(orcid_id, section="works")
+    ids, no_id_years = parse_orcid_data(orcid_data)
 
-    # user == (id, name, email, created_at)
+    citations = fetch_citations(ids)
+
+    years, pubs_y, cites_y = count_by_year(ids, no_id_years, citations)
     return {
-        "user": {
-            "id": user[0],
-            "name": user[1],
-            "email": user[2],
-            "created_at": user[3]
-        }
+        "years": years,
+        "publications": pubs_y,
+        "citations": cites_y
     }
-
 
 # Monta diretório estático para rodar o HTML
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
