@@ -1,33 +1,31 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Chart from "chart.js/auto";
 import "../Dashboard.css";
 
-function ChartsSection({ works }) {
+function ChartsSection({ orcidId }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
+  const [chartData, setChartData] = useState(null);
 
   useEffect(() => {
-    if (!works || works.length === 0) return;
-
-    const yearStats = {};
-
-    works.forEach((work) => {
-      const year = work.year;
-      const citations = work.citations || 0;
-
-      if (year) {
-        if (!yearStats[year]) {
-          yearStats[year] = { publications: 0, citations: 0 };
-        }
-
-        yearStats[year].publications += 1;
-        yearStats[year].citations += citations;
+    async function fetchStats() {
+      try {
+        const res = await fetch(`http://localhost:8000/orcid/${orcidId}/stats`);
+        if (!res.ok) throw new Error("Erro ao buscar estatísticas.");
+        const json = await res.json();
+        setChartData(json);
+      } catch (err) {
+        console.error("Erro ao carregar dados do gráfico:", err);
       }
-    });
+    }
 
-    const sortedYears = Object.keys(yearStats).sort();
-    const publications = sortedYears.map((year) => yearStats[year].publications);
-    const citations = sortedYears.map((year) => yearStats[year].citations);
+    fetchStats();
+  }, [orcidId]);
+
+  useEffect(() => {
+    if (!chartData) return;
+
+    const { years, publications, citations } = chartData;
 
     if (chartInstance.current) {
       chartInstance.current.destroy();
@@ -37,7 +35,7 @@ function ChartsSection({ works }) {
     chartInstance.current = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: sortedYears,
+        labels: years,
         datasets: [
           {
             label: "Publicações",
@@ -57,32 +55,30 @@ function ChartsSection({ works }) {
         ],
       },
       options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            mode: 'index',
-            intersect: false
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          },
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  let label = context.dataset.label || '';
-                  if (label) {
-                    label += ': ';
-                  }
-                  label += context.parsed.y;
-                  return label;
-                }
-              }
-            }
-          }
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: "index",
+          intersect: false,
         },
+        scales: {
+          y: {
+            beginAtZero: true,
+          },
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                let label = context.dataset.label || "";
+                if (label) label += ": ";
+                label += context.parsed.y;
+                return label;
+              },
+            },
+          },
+        },
+      },
     });
 
     return () => {
@@ -90,7 +86,7 @@ function ChartsSection({ works }) {
         chartInstance.current.destroy();
       }
     };
-  }, [works]);
+  }, [chartData]);
 
   return (
     <div className="chart-container">
