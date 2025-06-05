@@ -1,0 +1,81 @@
+/* src/components/Sidebar.css */
+
+.sidebar {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0px 25px 25px 0px;
+}
+
+.sidebar-content {
+  background-color: #1e293b;
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.toggle-button-container {
+  background-color: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 8px;
+}
+
+.toggle-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #333;
+}
+
+.sidebar-section {
+  margin-bottom: 16px;
+}
+
+.sidebar-section-title {
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.sidebar-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-list-item {
+  padding: 8px 0;
+}
+
+.sidebar-link {
+  color: #333;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-link:hover {
+  color: #5e35b1;
+}
+
+.keyword-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.keyword-item {
+  background-color: #e4dfff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.sidebarlogo {
+  margin-left: auto;
+  margin-right: auto;
+}
+
