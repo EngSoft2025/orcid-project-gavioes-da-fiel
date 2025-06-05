@@ -92,7 +92,7 @@ function Dashboard({}) {
     <div className="dashboard-container">
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} data={data} />
 
-      <header className="home-header">
+      <header className="dashboard-header">
         <div className="logo">
           <img
             src="../img/logo.png"
