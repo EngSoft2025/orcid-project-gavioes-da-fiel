@@ -1,12 +1,15 @@
 // src/pages/Dashboard.js
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { FaSearch, FaMoon, FaSun } from "react-icons/fa";
+import { FaSearch, FaMoon, FaSun, FaUserGraduate } from "react-icons/fa";
 import "../Dashboard.css";
 import LoadingDrop from "../components/LoadingDrop";
 import Sidebar from "../components/Sidebar";
 import ChartsSection from "../components/ChartsSection";
 import FilterPanel from "../components/filtros";
+import { PiStudentBold } from "react-icons/pi";
+import { FaRegUser } from "react-icons/fa";
+import { MdOutlineWorkOutline } from "react-icons/md";
 
 function Dashboard({}) {
   const { authorId } = useParams();
@@ -20,8 +23,8 @@ function Dashboard({}) {
 
   const [yearFilter, setYearFilter] = useState("");
   const [citationSort, setCitationSort] = useState("");
-
   const [filteredWorks, setFilteredWorks] = useState([]);
+  const [showFullBio, setShowFullBio] = useState(false);
 
   useEffect(() => {
     document.body.classList.toggle("dark", darkMode);
@@ -71,7 +74,6 @@ function Dashboard({}) {
         }
 
         if (citationSort !== "desc") {
-          // ordenar por ano desc como fallback padrão
           works = works.sort((a, b) => b.year - a.year);
         }
 
@@ -87,6 +89,11 @@ function Dashboard({}) {
   if (loading) return <LoadingDrop />;
   if (error) return <p className="error">Erro: {error}</p>;
   if (!data) return null;
+  const hasBio = !!data?.personal?.biography;
+  const hasEmployments =
+    Array.isArray(data?.employments) && data.employments.length > 0;
+  const hasEducations =
+    Array.isArray(data?.educations) && data.educations.length > 0;
 
   return (
     <div className="dashboard-container">
@@ -133,19 +140,6 @@ function Dashboard({}) {
               ))}
             </div>
           )}
-
-          {data.personal?.urls?.length > 0 && (
-            <div className="url-container">
-              <a
-                href={data.personal.urls[0]}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="url-button"
-              >
-                {data.personal.urls[0].includes("contact") ? "Contact" : "Site"}
-              </a>
-            </div>
-          )}
         </div>
 
         <div className="tabs modern-tabs" style={{ width: "100%" }}>
@@ -163,14 +157,84 @@ function Dashboard({}) {
         </div>
 
         <div className="tab-content">
-          {selectedTab === "Biografia" && data.personal.biography && (
-            <div className="bio-section">
-              <div className="bio-content">
-                <h3 className="bio-title">Biografia</h3>
-                <p className="bio-text">{data.personal.biography}</p>
+          {selectedTab === "Biografia" &&
+            (hasBio || hasEmployments || hasEducations ? (
+              <div className="bio-two-column">
+                {hasBio && (
+                  <div className="bio-card">
+                    <h3 className="section-title">
+                      <FaRegUser className="section-icon" />
+                      Sobre
+                    </h3>
+                    <div
+                      className={`bio-text ${
+                        showFullBio ? "expanded" : "collapsed"
+                      }`}
+                    >
+                      {data.personal.biography}
+                    </div>
+                    {data.personal.biography.length > 500 && (
+                      <button
+                        className="see-more-button"
+                        onClick={() => setShowFullBio((prev) => !prev)}
+                      >
+                        {showFullBio ? "Ver menos" : "Ver mais"}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {hasEmployments && (
+                  <div className="bio-card">
+                    <h3 className="section-title">
+                      <MdOutlineWorkOutline className="section-icon" />
+                      Empregos e cargos
+                    </h3>
+                    {data.employments.map((job, i) => (
+                      <div key={i} className="employment-entry">
+                        <p className="position">{job.role_title}</p>
+                        <p className="affiliation">
+                          {job.organization}
+                          {(job.start_date || job.end_date) && (
+                            <>
+                              {" "}
+                              ({job.start_date || "?"} –{" "}
+                              {job.end_date || "atual"})
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {hasEducations && (
+                  <div className="bio-card full-width">
+                    <h3 className="section-title">
+                      <PiStudentBold className="section-icon" />
+                      Educação e qualificações
+                    </h3>
+                    <div className="education-grid">
+                      {data.educations.map((edu, i) => (
+                        <div key={i} className="education-block">
+                          <p className="edu-institution">{edu.organization}</p>
+                          <p className="edu-details">{edu.start_date}</p>
+                          <p className="edu-details">{edu.degree_title}</p>
+                          {edu.areas?.length > 0 && (
+                            <p className="edu-areas">{edu.areas.join(", ")}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="empty-state">
+                <p>
+                  Nenhuma informação biográfica disponível para este perfil.
+                </p>
+              </div>
+            ))}
 
           {selectedTab === "Publicações" && (
             <>
