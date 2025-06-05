@@ -122,7 +122,7 @@ def format_works_from_openalex(orcid_id: str) -> List[Dict]:
 
 # Constantes para parsing e consulta de citações
 ID_TYPES = {"doi", "pmid", "pmcid", "arxiv"}
-CHUNK    = 100
+CHUNK    = 50
 
 def parse_orcid_data(data: dict) -> tuple[dict[str,int], list[int]]:
     """
@@ -183,7 +183,12 @@ def fetch_citations(ids: dict[str,int]) -> dict[str,int]:
                 "select":    f"{tp},cited_by_count"
             }
             resp = requests.get("https://api.openalex.org/works", params=params, timeout=10)
-            resp.raise_for_status()
+            try:
+                resp.raise_for_status()
+            except requests.HTTPError as e:
+                print(f"Erro ao buscar citações para o lote {chunk}: {e}")
+                continue  # ou decida retry/backoff
+
             data = resp.json()
 
             for w in data.get("results", []):

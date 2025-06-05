@@ -1,7 +1,8 @@
 # endpoints.py
 
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Set
+import logging
 from collections import Counter
 import re
 import requests
@@ -26,21 +27,13 @@ from api_clients.openalex_client import (
     parse_orcid_data,
     fetch_citations,
     count_by_year,
-    compute_metrics
+    compute_metrics,
+    format_works_from_openalex
 )
 
 app = FastAPI()
 
 # Configurações de CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Inicializa FastAPI
-app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -175,139 +168,250 @@ def get_all(orcid_id: str):
         "educations":   format_education_and_qualifications(edu or {})
     }
 
+
+
+# ========== requisições de filtro ===========
+
+# --- Expressões regulares para normalizar DOI e ORCID ---
+# --- Expressões regulares para normalizar DOI e ORCID ---
+_DOI_RE = re.compile(r"^https?://(?:dx\.)?doi\.org/|^doi:\s*", re.I)
+_ORCID_URL_RE = re.compile(r"^https?://orcid\.org/", re.I)
+
+
+def normalize_doi(doi: Optional[str]) -> str:
+    """
+    Remove prefixos de URL ou 'doi:' e retorna o DOI em minúsculas.
+    Exemplo: "https://doi.org/10.1000/xyz" -> "10.1000/xyz"
+    """
+    return _DOI_RE.sub("", (doi or "").strip()).lower()
+
+
+def normalize_orcid(orcid: str) -> str:
+    """
+    Remove eventual URL e espaços de um ORCID, mantendo apenas o formato numérico com hífens.
+    Exemplo: "https://orcid.org/0000-0002-1234-5678" -> "0000-0002-1234-5678"
+    """
+    return _ORCID_URL_RE.sub("", orcid.strip())
+
+
+def filter_by_year(works: List[Dict], year: int) -> List[Dict]:
+    """
+    Retorna apenas as obras cujo campo 'year' bate com o ano especificado.
+    Caso 'year' venha como inteiro ou string numérica, faz a comparação corretamente.
+    """
+    resultado: List[Dict] = []
+    for w in works:
+        ano_obra = w.get("year")
+        if isinstance(ano_obra, int) and ano_obra == year:
+            resultado.append(w)
+        elif isinstance(ano_obra, str) and ano_obra.isdigit() and int(ano_obra) == year:
+            resultado.append(w)
+    return resultado
+
+
+def filter_by_keyword(works: List[Dict], keyword: str) -> List[Dict]:
+    """
+    Retorna apenas as obras que contêm 'keyword' (case-insensitive)
+    no título, abstract/short_description ou na lista de keywords.
+    """
+    sk = keyword.lower()
+    filtrado: List[Dict] = []
+
+    for w in works:
+        match = False
+
+        # 1) Verifica título
+        title = w.get("title", "")
+        if isinstance(title, str) and sk in title.lower():
+            match = True
+
+        # 2) Verifica abstract/short_description
+        if not match:
+            abstract = w.get("short_description") or w.get("abstract")
+            if isinstance(abstract, str) and sk in abstract.lower():
+                match = True
+
+        # 3) Verifica lista de palavras‐chave
+        if not match:
+            kws = w.get("keywords", [])
+            if isinstance(kws, list):
+                for kw_item in kws:
+                    txt: Optional[str] = None
+                    if isinstance(kw_item, str):
+                        txt = kw_item
+                    elif isinstance(kw_item, dict):
+                        txt = kw_item.get("content")
+                    if isinstance(txt, str) and sk in txt.lower():
+                        match = True
+                        break
+
+        if match:
+            filtrado.append(w)
+
+    return filtrado
+
+
 @app.get("/orcid/{orcid_id}/works/filter_by_keyword")
 def filter_works_by_keyword(
     orcid_id: str,
-    keyword: str = Query(..., description="Keyword to search for in work titles, abstracts, and keywords.")
+    keyword: str = Query(..., description="Keyword para buscar nos títulos, abstracts e keywords."),
+    year: Optional[int] = Query(None, ge=0, description="(Opcional) Ano para filtrar antes de buscar pela keyword")
 ):
     try:
-        raw_works_data = fetch_orcid(orcid_id, section="works") 
+        # 0) Normaliza o ORCID
+        orcid_id_norm = normalize_orcid(orcid_id)
 
-        if not raw_works_data or not raw_works_data.get("group"):
-            return {"keyword_searched": keyword, "works": []}
-        
-        all_works = format_orcid_works(raw_works_data)
-      
-        if not all_works: # If format_orcid_works returns an empty list or None
-            return {"keyword_searched": keyword, "works": []}
+        # 1) Busca todas as obras do ORCID
+        raw = fetch_orcid(orcid_id_norm, section="works") or {}
+        all_works = format_orcid_works(raw) or []
 
-        filtered_works = []
-        search_keyword_lower = keyword.lower()
+        # 2) Se veio year, filtra primeiro por ano
+        if year is not None:
+            all_works = filter_by_year(all_works, year)
 
-        for i, work_item in enumerate(all_works): # Iterate through each work dictionary
-            
-            match_found = False 
+        # 3) Em seguida aplica o filtro por keyword
+        filtered = filter_by_keyword(all_works, keyword)
 
-            work_title = work_item.get("title") # Safely get title, could be None
-            if work_title and isinstance(work_title, str):
-                if search_keyword_lower in work_title.lower():
-                    match_found = True
-            if not match_found:
-                work_abstract = work_item.get("short_description") or work_item.get("abstract")
-                if work_abstract and isinstance(work_abstract, str):
-                    if search_keyword_lower in work_abstract.lower():
-                        match_found = True
-            
-            if not match_found:
-                work_keywords_data = work_item.get("keywords") # Get keywords data
-
-                if work_keywords_data and isinstance(work_keywords_data, list):
-                    for kw_entry in work_keywords_data:
-                        keyword_to_check = None
-                        if isinstance(kw_entry, str):
-                            keyword_to_check = kw_entry
-                        elif isinstance(kw_entry, dict):
-                            keyword_to_check = kw_entry.get("content") 
-                        
-                        if keyword_to_check and isinstance(keyword_to_check, str):
-                            if search_keyword_lower in keyword_to_check.lower():
-                                match_found = True
-                                break # Found in this work's keywords, move to next work
-                        
-            if match_found:
-                filtered_works.append(work_item)
-            
-        return {"keyword_searched": keyword, "works": filtered_works}
+        return {
+            "orcid_id": orcid_id_norm,
+            "keyword_searched": keyword,
+            "year_filter": year,
+            "works": filtered
+        }
 
     except HTTPException:
         raise
     except Exception as e:
-        
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while searching works: {str(e)}")
+        logging.exception(f"Erro interno ao filtrar obras por keyword: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno no servidor")
+
 
 @app.get("/orcid/{orcid_id}/works/filter_by_year")
 def filter_works_by_year(
     orcid_id: str,
-    year: int = Query(..., ge=0, description="Ano de publicação para filtrar")
+    year: int = Query(..., ge=0, description="Ano de publicação para filtrar"),
+    keyword: Optional[str] = Query(None, description="(Opcional) Filtrar por palavra-chave após ter filtrado por ano")
 ):
-    """
-    Retorna apenas as obras publicadas no ano especificado.
-    """
-    raw   = fetch_orcid(orcid_id, section="works") or {}
-    works = format_orcid_works(raw)
-    filtered = [w for w in works if str(w.get("year", "")).isdigit() and int(w["year"]) == year]
-    return {"year": year, "works": filtered}
+    try:
+        # 0) Normaliza o ORCID
+        orcid_id_norm = normalize_orcid(orcid_id)
 
-import re
+        # 1) Busca todas as obras do ORCID
+        raw = fetch_orcid(orcid_id_norm, section="works") or {}
+        all_works = format_orcid_works(raw) or []
 
-_DOI_RE = re.compile(r"^https?://(?:dx\.)?doi\.org/|^doi:\s*", re.I)
+        # 2) Filtra por ano
+        filtered_by_year = filter_by_year(all_works, year)
 
-def normalize_doi(doi: str | None) -> str:
-    """
-    Remove prefixos de URL ou 'doi:' e retorna o DOI em minúsculas.
-    """
-    return _DOI_RE.sub("", (doi or "").strip()).lower()
+        # 3) Se veio keyword, aplica filtro por keyword no conjunto já filtrado por ano
+        if keyword:
+            filtered_by_year = filter_by_keyword(filtered_by_year, keyword)
+
+        return {
+            "orcid_id": orcid_id_norm,
+            "year": year,
+            "keyword_filter": keyword,
+            "works": filtered_by_year
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception(f"Erro interno ao filtrar obras por ano: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno no servidor")
+
 
 @app.get("/orcid/{orcid_id}/works/filter_by_citations")
-def filter_works_by_citations(orcid_id: str):
-    # Busca no ORCID
-    raw   = fetch_orcid(orcid_id, section="works") or {}
-    works = format_orcid_works(raw)         # [{ "doi": "...", ... }, …]
-
-    # DOIs únicos normalizados
-    dois = {normalize_doi(w.get("doi")) for w in works if w.get("doi")}
-
-    # Busca em lote no OpenAlex (paginado)
-    doi_to_cit = {}
-    oa_url = "https://api.openalex.org/works"
+def filter_works_by_citations(
+    orcid_id: str,
+    year: Optional[int] = Query(
+        None,
+        ge=0,
+        description="(Opcional) Ano para filtrar antes de ordenar por citações"
+    ),
+    keyword: Optional[str] = Query(
+        None,
+        description="(Opcional) Filtrar por keyword antes de ordenar por citações"
+    )
+):
     try:
-        cursor = "*"
-        while cursor and len(doi_to_cit) < len(dois):
-            params = {
-                "filter"  : f"author.orcid:https://orcid.org/{orcid_id}",
-                "per-page": 200,               # limite da API
-                "cursor"  : cursor,
-            }
-            resp = requests.get(oa_url, params=params, timeout=10)
-            data = resp.json()
-            for item in data.get("results", data.get("works", [])):
-                d = normalize_doi(item.get("doi"))
-                if d:
-                    c = item.get("cited_by_count", item.get("citations", 0)) or 0
-                    doi_to_cit[d] = c
-            cursor = data.get("meta", {}).get("next_cursor")
-            if cursor == "null": 
-                cursor = None
-    except Exception:
-        pass   # prossegue para fallback
+        # 1) Normaliza o ORCID
+        orcid_id_norm = normalize_orcid(orcid_id)
 
-    # consulta individual para DOIs ainda faltando
-    for d in dois - doi_to_cit.keys():
-        try:
-            r = requests.get(f"{oa_url}/doi:{d}", timeout=5)
-            r.raise_for_status()
-            j = r.json()
-            doi_to_cit[d] = j.get("cited_by_count", 0) or 0
-        except Exception:
-            doi_to_cit[d] = 0
+        # 2) Busca todas as obras do ORCID
+        raw = fetch_orcid(orcid_id_norm, section="works") or {}
+        all_works = format_orcid_works(raw) or []
 
-    # Pega as contagens e ordena
-    for w in works:
-        d = normalize_doi(w.get("doi"))
-        w["citations"] = doi_to_cit.get(d, 0)
+        # 3) Se vier 'year', filtra primeiro todas as obras por ano
+        if year is not None:
+            all_works = filter_by_year(all_works, year)
 
-    works.sort(key=lambda w: w["citations"], reverse=True)
-    return {"works": works}
+        # 4) Se vier 'keyword', filtra no conjunto já filtrado por ano
+        if keyword:
+            all_works = filter_by_keyword(all_works, keyword)
+
+        # 5) Monta um dicionário de IDs para obter citações:
+        #    chave = "doi:<doi_normalizado>" → valor = ano (podemos usar o próprio campo 'year' ou 0)
+        ids_para_citacoes: Dict[str, int] = {}
+        for w in all_works:
+            raw_doi = w.get("doi")
+            if not raw_doi:
+                continue
+            d_norm = normalize_doi(raw_doi)
+            # Se quisermos usar o ano no filtro, podemos pegar w.get("year") ou simplesmente 0
+            ids_para_citacoes[f"doi:{d_norm}"] = w.get("year", 0)  # valor do dicionário não é usado no fetch_citations
+
+        # 6) Chama fetch_citations para obter { "doi:<doi>": cited_by_count }
+        doi_to_cit = fetch_citations(ids_para_citacoes)
+
+        # 7) Para cada obra, adiciona o campo "cited_by_count"
+        works_with_counts: List[Dict] = []
+        for w in all_works:
+            w_copy = w.copy()
+            raw_doi = w.get("doi")
+            if raw_doi:
+                d_norm = normalize_doi(raw_doi)
+                key = f"doi:{d_norm}"
+                w_copy["cited_by_count"] = doi_to_cit.get(key, 0)
+            else:
+                w_copy["cited_by_count"] = 0
+            works_with_counts.append(w_copy)
+
+        unique_by_doi: List[Dict] = []
+        seen_dois: set[str] = set()
+        for w in works_with_counts:
+            raw_doi = w.get("doi")
+            if not raw_doi:
+                # Se não tiver DOI, pode adicionar normalmente (ou filtrar dependendo do seu critério)
+                unique_by_doi.append(w)
+                continue
+
+            d_norm = normalize_doi(raw_doi)
+            if d_norm not in seen_dois:
+                seen_dois.add(d_norm)
+                unique_by_doi.append(w)
+            # caso já tenha visto este DOI, ignora as duplicatas
+
+
+        # 8) Ordena todas as obras em ordem decrescente de citações
+        all_works_sorted = sorted(
+            unique_by_doi,
+            key=lambda x: x.get("cited_by_count", 0),
+            reverse=True,
+        )
+
+        return {
+            "orcid_id":                  orcid_id_norm,
+            "year_filter":               year,
+            "keyword_filter":            keyword,
+            "works_sorted_by_citations": all_works_sorted
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception(f"Erro interno ao filtrar obras por citações: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno no servidor")
 
 
 @app.get("/orcid/{orcid_id}/metrics")
