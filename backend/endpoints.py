@@ -1,6 +1,10 @@
 # endpoints.py
 
-from typing import List, Dict
+
+from typing import List, Dict, Any
+from collections import Counter
+import re
+import requests
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -171,15 +175,6 @@ def get_all(orcid_id: str):
         "educations":   format_education_and_qualifications(edu or {})
     }
 
-@app.get("/orcid/{orcid_id}/works/filter_by_keyword")
-def filter_works_by_keyword(orcid_id: str, keyword: str = Query(..., description="Palavra-chave para filtrar títulos")):
-    """
-    Retorna obras cujo título contenha a palavra-chave.
-    """
-    raw   = fetch_orcid(orcid_id, section="works") or {}
-    works = format_orcid_works(raw)
-    filtered = [w for w in works if keyword.lower() in w["title"].lower()]
-    return {"works": filtered}
 
 @app.get("/orcid/{orcid_id}/works/filter_by_year")
 def filter_works_by_year(
@@ -254,6 +249,72 @@ def filter_works_by_citations(orcid_id: str):
 
     works.sort(key=lambda w: w["citations"], reverse=True)
     return {"works": works}
+
+# ... (your existing imports and FastAPI app setup) ...
+# from api_clients.orcid_client import fetch_orcid, format_orcid_works # Ensure these are correctly imported
+
+@app.get("/orcid/{orcid_id}/works/filter_by_keyword")
+def filter_works_by_keyword(
+    orcid_id: str,
+    keyword: str = Query(..., description="Keyword to search for in work titles, abstracts, and keywords.")
+):
+    try:
+        raw_works_data = fetch_orcid(orcid_id, section="works") 
+
+        if not raw_works_data or not raw_works_data.get("group"):
+            return {"keyword_searched": keyword, "works": []}
+        
+        all_works = format_orcid_works(raw_works_data)
+      
+        if not all_works: # If format_orcid_works returns an empty list or None
+            return {"keyword_searched": keyword, "works": []}
+
+        filtered_works = []
+        search_keyword_lower = keyword.lower()
+
+        for i, work_item in enumerate(all_works): # Iterate through each work dictionary
+            
+            match_found = False 
+
+            work_title = work_item.get("title") # Safely get title, could be None
+            if work_title and isinstance(work_title, str):
+                if search_keyword_lower in work_title.lower():
+                    match_found = True
+            if not match_found:
+                work_abstract = work_item.get("short_description") or work_item.get("abstract")
+                if work_abstract and isinstance(work_abstract, str):
+                    if search_keyword_lower in work_abstract.lower():
+                        match_found = True
+            
+            if not match_found:
+                work_keywords_data = work_item.get("keywords") # Get keywords data
+
+                if work_keywords_data and isinstance(work_keywords_data, list):
+                    for kw_entry in work_keywords_data:
+                        keyword_to_check = None
+                        if isinstance(kw_entry, str):
+                            keyword_to_check = kw_entry
+                        elif isinstance(kw_entry, dict):
+                            keyword_to_check = kw_entry.get("content") 
+                        
+                        if keyword_to_check and isinstance(keyword_to_check, str):
+                            if search_keyword_lower in keyword_to_check.lower():
+                                match_found = True
+                                break # Found in this work's keywords, move to next work
+                        
+            if match_found:
+                filtered_works.append(work_item)
+            
+        return {"keyword_searched": keyword, "works": filtered_works}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while searching works: {str(e)}")
+
+
+
 
 @app.get("/orcid/{orcid_id}/metrics")
 def get_orcid_metrics(orcid_id: str):
