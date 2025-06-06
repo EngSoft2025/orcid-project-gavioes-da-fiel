@@ -9,7 +9,6 @@ import requests
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 from api_clients.orcid_client import (
     fetch_orcid,
@@ -40,8 +39,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# --- ORCID Endpoints ---
 
 @app.get("/orcid/search/name", response_model=List[Dict[str, str]])
 def search_name(query: str, max_results: int = 10) -> List[Dict[str, str]]:
@@ -172,11 +169,8 @@ def get_all(orcid_id: str):
 
 # ========== requisições de filtro ===========
 
-# --- Expressões regulares para normalizar DOI e ORCID ---
-# --- Expressões regulares para normalizar DOI e ORCID ---
 _DOI_RE = re.compile(r"^https?://(?:dx\.)?doi\.org/|^doi:\s*", re.I)
 _ORCID_URL_RE = re.compile(r"^https?://orcid\.org/", re.I)
-
 
 def normalize_doi(doi: Optional[str]) -> str:
     """
@@ -220,18 +214,18 @@ def filter_by_keyword(works: List[Dict], keyword: str) -> List[Dict]:
     for w in works:
         match = False
 
-        # 1) Verifica título
+        # Verifica título
         title = w.get("title", "")
         if isinstance(title, str) and sk in title.lower():
             match = True
 
-        # 2) Verifica abstract/short_description
+        # Verifica abstract/short_description
         if not match:
             abstract = w.get("short_description") or w.get("abstract")
             if isinstance(abstract, str) and sk in abstract.lower():
                 match = True
 
-        # 3) Verifica lista de palavras‐chave
+        # Verifica lista de palavras‐chave
         if not match:
             kws = w.get("keywords", [])
             if isinstance(kws, list):
@@ -258,18 +252,17 @@ def filter_works_by_keyword(
     year: Optional[int] = Query(None, ge=0, description="(Opcional) Ano para filtrar antes de buscar pela keyword")
 ):
     try:
-        # 0) Normaliza o ORCID
         orcid_id_norm = normalize_orcid(orcid_id)
 
-        # 1) Busca todas as obras do ORCID
+        # Busca todas as obras do ORCID
         raw = fetch_orcid(orcid_id_norm, section="works") or {}
         all_works = format_orcid_works(raw) or []
 
-        # 2) Se veio year, filtra primeiro por ano
+        # Se veio year, filtra primeiro por ano
         if year is not None:
             all_works = filter_by_year(all_works, year)
 
-        # 3) Em seguida aplica o filtro por keyword
+        # Em seguida aplica o filtro por keyword
         filtered = filter_by_keyword(all_works, keyword)
 
         return {
@@ -293,17 +286,16 @@ def filter_works_by_year(
     keyword: Optional[str] = Query(None, description="(Opcional) Filtrar por palavra-chave após ter filtrado por ano")
 ):
     try:
-        # 0) Normaliza o ORCID
         orcid_id_norm = normalize_orcid(orcid_id)
 
-        # 1) Busca todas as obras do ORCID
+        # Busca todas as obras do ORCID
         raw = fetch_orcid(orcid_id_norm, section="works") or {}
         all_works = format_orcid_works(raw) or []
 
-        # 2) Filtra por ano
+        # Filtra por ano
         filtered_by_year = filter_by_year(all_works, year)
 
-        # 3) Se veio keyword, aplica filtro por keyword no conjunto já filtrado por ano
+        # Se veio keyword, aplica filtro por keyword no conjunto já filtrado por ano
         if keyword:
             filtered_by_year = filter_by_keyword(filtered_by_year, keyword)
 
@@ -335,22 +327,21 @@ def filter_works_by_citations(
     )
 ):
     try:
-        # 1) Normaliza o ORCID
         orcid_id_norm = normalize_orcid(orcid_id)
 
-        # 2) Busca todas as obras do ORCID
+        # Busca todas as obras do ORCID
         raw = fetch_orcid(orcid_id_norm, section="works") or {}
         all_works = format_orcid_works(raw) or []
 
-        # 3) Se vier 'year', filtra primeiro todas as obras por ano
+        # Se vier 'year', filtra primeiro todas as obras por ano
         if year is not None:
             all_works = filter_by_year(all_works, year)
 
-        # 4) Se vier 'keyword', filtra no conjunto já filtrado por ano
+        # Se vier 'keyword', filtra no conjunto já filtrado por ano
         if keyword:
             all_works = filter_by_keyword(all_works, keyword)
 
-        # 5) Monta um dicionário de IDs para obter citações:
+        # Monta um dicionário de IDs para obter citações:
         #    chave = "doi:<doi_normalizado>" → valor = ano (podemos usar o próprio campo 'year' ou 0)
         ids_para_citacoes: Dict[str, int] = {}
         for w in all_works:
@@ -361,10 +352,10 @@ def filter_works_by_citations(
             # Se quisermos usar o ano no filtro, podemos pegar w.get("year") ou simplesmente 0
             ids_para_citacoes[f"doi:{d_norm}"] = w.get("year", 0)  # valor do dicionário não é usado no fetch_citations
 
-        # 6) Chama fetch_citations para obter { "doi:<doi>": cited_by_count }
+        # Chama fetch_citations para obter { "doi:<doi>": cited_by_count }
         doi_to_cit = fetch_citations(ids_para_citacoes)
 
-        # 7) Para cada obra, adiciona o campo "cited_by_count"
+        # Para cada obra, adiciona o campo "cited_by_count"
         works_with_counts: List[Dict] = []
         for w in all_works:
             w_copy = w.copy()
@@ -382,7 +373,6 @@ def filter_works_by_citations(
         for w in works_with_counts:
             raw_doi = w.get("doi")
             if not raw_doi:
-                # Se não tiver DOI, pode adicionar normalmente (ou filtrar dependendo do seu critério)
                 unique_by_doi.append(w)
                 continue
 
@@ -393,7 +383,7 @@ def filter_works_by_citations(
             # caso já tenha visto este DOI, ignora as duplicatas
 
 
-        # 8) Ordena todas as obras em ordem decrescente de citações
+        # Ordena todas as obras em ordem decrescente de citações
         all_works_sorted = sorted(
             unique_by_doi,
             key=lambda x: x.get("cited_by_count", 0),
@@ -455,6 +445,3 @@ def get_orcid_stats(orcid_id: str):
         "publications": pubs_y,
         "citations": cites_y
     }
-
-# Monta diretório estático para rodar o HTML
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
