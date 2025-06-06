@@ -1,0 +1,183 @@
+/* === Importa Montserrat === */
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap");
+
+/* === Estrutura principal da sidebar === */
+.MuiTypography-root {
+  font-family: "Montserrat", sans-serif !important;
+  color: #ffffff;
+}
+.sidebar {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: "Montserrat", sans-serif;
+}
+
+.sidebar-container {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar-content {
+  background-color: #0f172a;
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  scroll-behavior: smooth;
+  font-family: "Montserrat", sans-serif;
+}
+
+/* === Títulos e textos === */
+.sidebar-title {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+}
+
+.sidebar-subtitle {
+  color: #e2e8f0;
+  font-weight: 700 !important;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+/* === Espaçamento entre seções === */
+.sidebar-content > *:not(:last-child) {
+  margin-bottom: 24px;
+}
+
+/* === Logo === */
+.sidebarlogo {
+  margin-left: auto;
+  margin-right: auto;
+  filter: brightness(1, brightness(0.8));
+}
+
+.logo-img {
+  display: block;
+  margin: 20px auto;
+}
+
+/* === Botão de abrir/fechar === */
+.toggle-button-container {
+  background-color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 8px;
+}
+
+.toggle-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ffffff;
+}
+
+.icon-white {
+  color: #ffffff;
+}
+
+/* === Scrollbar discreta === */
+.sidebar-content {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-content::-webkit-scrollbar {
+  width: 0px;
+}
+
+.sidebar-content:hover::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-content:hover::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-content:hover::-webkit-scrollbar-thumb {
+  background-color: #0364eb;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.sidebar-content:hover::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;
+}
+
+/* === Palavras-chave (tags) === */
+.keyword-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.keyword-item {
+  background-color: #334155;
+  color: #e2e8f0;
+  border-radius: 9999px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.keyword-item:hover {
+  background-color: #475569;
+  color: #ffffff;
+}
+
+/* === Links === */
+.sidebar-link {
+  color: #60a5fa;
+  word-break: break-word;
+  display: inline-block;
+  font-size: 0.9rem;
+  text-decoration: none !important;
+  transition: color 0.2s ease;
+}
+
+.sidebar-link:hover {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+
+/* modo escuro*/
+body.dark .sidebar-content {
+  background-color: #0b131a;
+  color: #f8fafc;
+}
+
+body.dark .sidebar-title,
+body.dark .sidebar-subtitle,
+body.dark .sidebar-text,
+body.dark .keyword-item,
+body.dark .sidebar-link{
+  color: #f1f5f9;
+}
+
+body.dark .keyword-item {
+  background-color: #1e3a8a;
+}
+
+body.dark .keyword-item:hover {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+body.dark .toggle-button-container {
+  background-color: #0b131a;
+}
+
+body.dark .logo-img {
+  filter: brightness(2);
+}
