@@ -16,14 +16,17 @@ function Dashboard({}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [selectedTab, setTab] = useState("Biografia");
 
+  // Estado para filtros e busca
+  const [searchTerm, setSearchTerm] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [citationSort, setCitationSort] = useState("");
   const [filteredWorks, setFilteredWorks] = useState([]);
+
+  // Controle de interface
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [selectedTab, setTab] = useState("Biografia");
   const [showFullBio, setShowFullBio] = useState(false);
 
   useEffect(() => {
@@ -32,6 +35,7 @@ function Dashboard({}) {
 
   const toggleDarkMode = () => setDarkMode((prev) => !prev);
 
+  // 1) Ao montar o componente, buscar todos os dados do autor (/orcid/{authorId}/all)
   useEffect(() => {
     async function fetchAll() {
       setLoading(true);
@@ -50,31 +54,69 @@ function Dashboard({}) {
     fetchAll();
   }, [authorId]);
 
+  // 2) Função para buscar obras filtradas por palavra-chave (chamada quando clica em keyword)
+  const handleKeywordClick = async (keyword) => {
+    if (!keyword) return;
+    try {
+      setLoading(true);
+      // Chama endpoint filter_by_keyword, assumindo que devolve { works: [...] }
+      const res = await fetch(
+        `http://localhost:8000/orcid/${authorId}/works/filter_by_keyword?keyword=${encodeURIComponent(
+          keyword
+        )}`
+      );
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const json = await res.json();
+      // Se o backend retornar algo como json.works
+      const worksFromKeyword = json.works || [];
+      setFilteredWorks(worksFromKeyword);
+      // Muda para a aba “Publicações” automaticamente
+      setTab("Publicações");
+    } catch (err) {
+      console.error("Erro ao filtrar por keyword:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 3) useEffect para buscar e filtrar obras com base nos filtros de ano / busca / “mais citadas”
   useEffect(() => {
     async function fetchAndFilterWorks() {
+      if (!data) return; // precisa ter o data.works carregado primeiro
+
       try {
         let works = [];
 
-        const res = await fetch(
-          `http://localhost:8000/orcid/${authorId}/works/filter_by_citations`
-        );
-        const json = await res.json();
-        works = json.works || [];
+        if (citationSort === "desc") {
+          // Se estiver “Mais citadas”, chama o endpoint filter_by_citations
+          const res = await fetch(
+            `http://localhost:8000/orcid/${authorId}/works/filter_by_citations`
+          );
+          if (!res.ok) throw new Error(`Status ${res.status}`);
+          const json = await res.json();
+          works = json.works_sorted_by_citations || [];
+        } else {
+          // Senão, usa simplesmente data.works e ordena por ano decrescente
+          works = Array.isArray(data.works) ? [...data.works] : [];
+          works.sort((a, b) => {
+            const yearA = a.year ? Number(a.year) : 0;
+            const yearB = b.year ? Number(b.year) : 0;
+            return yearB - yearA;
+          });
+        }
 
+        // Filtra por ano, se selecionado
         if (yearFilter) {
           works = works.filter(
             (w) => w.year && w.year.toString() === yearFilter
           );
         }
 
+        // Filtra por termo de busca no título, se digitado
         if (searchTerm) {
           works = works.filter((w) =>
             w.title.toLowerCase().includes(searchTerm.toLowerCase())
           );
-        }
-
-        if (citationSort !== "desc") {
-          works = works.sort((a, b) => b.year - a.year);
         }
 
         setFilteredWorks(works);
@@ -84,16 +126,17 @@ function Dashboard({}) {
     }
 
     fetchAndFilterWorks();
-  }, [authorId, searchTerm, yearFilter, citationSort]);
+  }, [authorId, data, searchTerm, yearFilter, citationSort]);
 
   if (loading) return <LoadingDrop />;
   if (error) return <p className="error">Erro: {error}</p>;
   if (!data) return null;
-  const hasBio = !!data?.personal?.biography;
+
+  const hasBio = !!data.personal?.biography;
   const hasEmployments =
-    Array.isArray(data?.employments) && data.employments.length > 0;
+    Array.isArray(data.employments) && data.employments.length > 0;
   const hasEducations =
-    Array.isArray(data?.educations) && data.educations.length > 0;
+    Array.isArray(data.educations) && data.educations.length > 0;
 
   return (
     <div className="dashboard-container">
@@ -115,9 +158,11 @@ function Dashboard({}) {
       </header>
 
       <main className="main-content">
+        {/* === BOX DE PERFIL (Nome, Empregos Atuais, Keywords etc) === */}
         <div className="profile-box">
           <h1>{data.personal.full_name}</h1>
 
+          {/* Empregos atuais */}
           {data.employments?.some((e) => !e.end_date) && (
             <div className="active-jobs">
               {data.employments
@@ -131,17 +176,23 @@ function Dashboard({}) {
             </div>
           )}
 
+          {/* PALAVRAS-CHAVE: transformamos cada uma em botão */}
           {data.keywords?.length > 0 && (
             <div className="keywords">
               {data.keywords.map((kw, i) => (
-                <span key={i} className="keyword">
+                <button
+                  key={i}
+                  className="keyword-button"
+                  onClick={() => handleKeywordClick(kw)}
+                >
                   {kw}
-                </span>
+                </button>
               ))}
             </div>
           )}
         </div>
 
+        {/* === TABS: Biografia / Publicações / Métricas === */}
         <div className="tabs modern-tabs" style={{ width: "100%" }}>
           {["Biografia", "Publicações", "Métricas"].map((tab) => (
             <button
@@ -156,7 +207,9 @@ function Dashboard({}) {
           ))}
         </div>
 
+        {/* === CONTEÚDO DAS TABS === */}
         <div className="tab-content">
+          {/* ===== ABA “BIOGRAFIA” ===== */}
           {selectedTab === "Biografia" &&
             (hasBio || hasEmployments || hasEducations ? (
               <div className="bio-two-column">
@@ -207,6 +260,7 @@ function Dashboard({}) {
                     ))}
                   </div>
                 )}
+
                 {hasEducations && (
                   <div className="bio-card full-width">
                     <h3 className="section-title">
@@ -220,7 +274,9 @@ function Dashboard({}) {
                           <p className="edu-details">{edu.start_date}</p>
                           <p className="edu-details">{edu.degree_title}</p>
                           {edu.areas?.length > 0 && (
-                            <p className="edu-areas">{edu.areas.join(", ")}</p>
+                            <p className="edu-areas">
+                              {edu.areas.join(", ")}
+                            </p>
                           )}
                         </div>
                       ))}
@@ -236,6 +292,8 @@ function Dashboard({}) {
               </div>
             ))}
 
+          {/* ===== ABA “PUBLICAÇÕES” ===== */}
+                    
           {selectedTab === "Publicações" && (
             <>
               <section className="search-section">
@@ -263,7 +321,26 @@ function Dashboard({}) {
                   <ul>
                     {filteredWorks.map((w, i) => (
                       <li key={i}>
-                        {w.title} <em>({w.year})</em>
+                        {/* 
+                          Se existir URL (w.url), usamos <a> para tornar clicável. 
+                          Colocamos target="_blank" e rel="noopener noreferrer" 
+                          para abrir em nova guia com segurança.
+                        */}
+                        {w.url ? (
+                          <a
+                            href={w.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="publication-link"
+                          >
+                            {w.title} <em>({w.year})</em>
+                          </a>
+                        ) : (
+                          // Caso não haja URL, apenas mostramos título/ano sem link
+                          <>
+                            {w.title} <em>({w.year})</em>
+                          </>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -274,6 +351,7 @@ function Dashboard({}) {
             </>
           )}
 
+          {/* ===== ABA “MÉTRICAS” ===== */}
           {selectedTab === "Métricas" && (
             <div className="metrics-section">
               <div className="metric-card">

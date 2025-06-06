@@ -101,6 +101,64 @@
   pointer-events: none;
 }
 
+
+/* Link nas Publicações */
+/* Faz com que o <a> ocupe todo o <li> e herde o estilo do cartão */
+.results-panel li {
+  background: var(--color-card-bg);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px var(--color-shadow-light);
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Quando passar o mouse no LI, mantém o efeito original */
+.results-panel li:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px var(--color-shadow-heavy);
+}
+
+/* Remove o sublinhado padrão, define cor e tamanho de fonte mais confortável */
+.results-panel li a.publication-link {
+  display: block;           /* ocupa todo o espaço interno do <li> */
+  width: 100%;
+  height: 100%;
+  text-decoration: none;    /* tira o sublinhado padrão */
+  color: #4b5563;           /* roxo/azul escuro para o texto */
+  font-size: 1rem;          /* tamanho agradável para leitura */
+  line-height: 1.5;         /* mais espaço entre linhas */
+  font-weight: 600;         /* deixa o título um pouco mais “negrito” */
+  transition: color 0.2s;   /* transição suave de cor ao passar o mouse */
+}
+
+/* 3) Efeito de hover para o link */
+.results-panel li a.publication-link:hover {
+  color: #2563eb;           /* roxo/azul mais claro ao passar o mouse */
+  text-decoration: none;
+}
+
+/* 4) Ajusta o <em> (ano) para ficar visualmente mais “leve” */
+.results-panel li a.publication-link em {
+  font-style: normal;       /* remove itálico */
+  color: var(--color-muted);
+  font-weight: 400;
+  margin-left: 0.5rem;
+}
+
+/* 5) Caso exista algum texto quebrando muitas linhas, adiciona um pouco de padding interno extra */
+.results-panel li a.publication-link p,
+.results-panel li a.publication-link span {
+  margin: 0;
+  padding: 0;
+}
+
+/* 6) Se quiser alinhar o título verticalmente, podemos usar padding adicional no <a> */
+.results-panel li a.publication-link {
+  padding: 0.5rem 0;        /* espaçamento vertical dentro do bloco clicável */
+}
+
 /* Results panel */
 .results-panel {
   flex: 1;
@@ -110,6 +168,7 @@
   flex-direction: column;
   margin: 0 auto;
 }
+
 .results-panel ul {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -268,6 +327,27 @@
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ========= KEYWORD AS BUTTON ========= */
+.keyword-button {
+  padding: 6px 12px;            /* altura e espaçamento lateral */
+  border-radius: 20px;          /* corpo arredondado igual à antiga badge */
+  font-size: 0.8rem;            /* mesmo tamanho de fonte */
+  border: none;                 /* remove borda padrão do button */
+  cursor: pointer;              /* cursor “mãozinha” */
+  transition: background-color 0.2s ease;
+  outline: none;                /* remove contorno padrão ao focar */
+}
+
+.keyword-button:hover {
+  background-color: #b3d8ff;    /* ligeiramente mais escuro no hover */
+}
+
+/* Se quiser realçar o foco (acessibilidade), por exemplo: */
+.keyword-button:focus {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
 }
 
 .search-section {
@@ -662,7 +742,7 @@
   font-size: 0.9rem;
   color: #475569;
 }
-/* ========== MODO ESCURO REFINADO ========== */
+/* ========== MODO ESCURO ========== */
 
 /* Container geral */
 body.dark .dashboard-container,
@@ -718,6 +798,23 @@ body.dark .section-icon {
   color: #60a5fa;
 }
 
+/* No modo escuro, keywords ficam com fundo escuro e texto mais claro */
+  body.dark .keyword-button {
+    background-color: #1e3a8a;  /* cinza-escuro */
+    color: #cbd5e1;             /* cinza-claro para legibilidade */
+  }
+
+  /* No modo escuro, hover deixa as keywords um pouco mais claras e texto branco */
+  body.dark .keyword-button:hover {
+    background-color: #2563eb;  /* tom levemente mais claro que #1e293b */
+    color: #ffffff;             /* texto branco no hover */
+}
+
+/* Se quiser efeito de foco (acessibilidade), por exemplo: */
+body.dark .keyword-button:focus {
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.4);
+}
+
 /* Tipografia */
 body.dark .bio-text,
 body.dark .edu-details,
@@ -769,6 +866,15 @@ body.dark .results-panel li em {
   color: #94a3b8;
 }
 
+/* No modo escuro, deixa o link branco */
+body.dark .results-panel li a.publication-link {
+  color: #cbd5e1;
+}
+
+/* No modo escuro, ao passar o mouse, muda para roxo */
+body.dark .results-panel li a.publication-link:hover {
+  color: #2563eb; 
+}
 /* Empty state */
 body.dark .empty-state {
   background-color: #0f172a;

@@ -4,6 +4,7 @@
 /* === Estrutura principal da sidebar === */
 .MuiTypography-root {
   font-family: "Montserrat", sans-serif !important;
+  color: #ffffff;
 }
 .sidebar {
   position: relative;
@@ -160,7 +161,7 @@ body.dark .sidebar-title,
 body.dark .sidebar-subtitle,
 body.dark .sidebar-text,
 body.dark .keyword-item,
-body.dark .sidebar-link {
+body.dark .sidebar-link{
   color: #f1f5f9;
 }
 
