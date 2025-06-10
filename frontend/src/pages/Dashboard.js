@@ -1,16 +1,39 @@
 // src/pages/Dashboard.js
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { FaSearch, FaBars } from "react-icons/fa";
+// FaUserGraduate removed as it was unused
+import { FaSearch, FaMoon, FaSun } from "react-icons/fa";
 import "../Dashboard.css";
+import LoadingDrop from "../components/LoadingDrop";
+import Sidebar from "../components/Sidebar";
+import ChartsSection from "../components/ChartsSection";
+import FilterPanel from "../components/filtros";
+import AggregatedMetrics from "../components/AggregatedMetrics"; // Import the new component
+import { PiStudentBold } from "react-icons/pi";
+import { FaRegUser } from "react-icons/fa";
+import { MdOutlineWorkOutline } from "react-icons/md";
 
-function Dashboard({ isLoggedIn, user }) {
+function Dashboard() {
   const { authorId } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showSidebar, setShowSidebar] = useState(true);
+
   const [searchTerm, setSearchTerm] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
+  const [citationSort, setCitationSort] = useState("");
+  const [filteredWorks, setFilteredWorks] = useState([]);
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [selectedTab, setTab] = useState("Biografia");
+  const [showFullBio, setShowFullBio] = useState(false);
+
+  useEffect(() => {
+    document.body.classList.toggle("dark", darkMode);
+  }, [darkMode]);
+
+  const toggleDarkMode = () => setDarkMode((prev) => !prev);
 
   useEffect(() => {
     async function fetchAll() {
@@ -30,141 +53,187 @@ function Dashboard({ isLoggedIn, user }) {
     fetchAll();
   }, [authorId]);
 
-  if (loading) return <p>Carregando perfil...</p>;
+  const handleKeywordClick = async (keyword) => {
+    if (!keyword) return;
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `http://localhost:8000/orcid/${authorId}/works/filter_by_keyword?keyword=${encodeURIComponent(keyword)}`
+      );
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const json = await res.json();
+      setFilteredWorks(json.works || []);
+      setTab("Publicações");
+    } catch (err) {
+      console.error("Erro ao filtrar por keyword:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    async function fetchAndFilterWorks() {
+      if (!data?.works) return;
+      try {
+        let works = [];
+        if (citationSort === "desc") {
+          const res = await fetch(`http://localhost:8000/orcid/${authorId}/works/filter_by_citations`);
+          if (!res.ok) throw new Error(`Status ${res.status}`);
+          const json = await res.json();
+          works = json.works_sorted_by_citations || [];
+        } else {
+          works = [...data.works].sort((a, b) => (b.year || 0) - (a.year || 0));
+        }
+        if (yearFilter) {
+          works = works.filter((w) => w.year?.toString() === yearFilter);
+        }
+        if (searchTerm) {
+          works = works.filter((w) => w.title?.toLowerCase().includes(searchTerm.toLowerCase()));
+        }
+        setFilteredWorks(works);
+      } catch (err) {
+        console.error("Erro ao buscar obras filtradas:", err);
+      }
+    }
+    fetchAndFilterWorks();
+  }, [authorId, data, searchTerm, yearFilter, citationSort]);
+
+  if (loading && !data) return <LoadingDrop />;
   if (error) return <p className="error">Erro: {error}</p>;
   if (!data) return null;
 
-  // works come from format_works → [ { title, year }, … ]
-  const filteredWorks = data.works.filter((w) =>
-    w.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const hasBio = !!data.personal?.biography;
+  const hasEmployments = Array.isArray(data.employments) && data.employments.length > 0;
+  const hasEducations = Array.isArray(data.educations) && data.educations.length > 0;
 
   return (
     <div className="dashboard-container">
-      <button
-        className="hamburger"
-        onClick={() => setShowSidebar((v) => !v)}
-      >
-        <FaBars />
-      </button>
-
-      {showSidebar && (
-        <aside className="sidebar">
-          <h2>{data.personal.full_name}</h2>
-
-          {data.personal.biography && (
-            <>
-              <h3>Biografia</h3>
-              <p>{data.personal.biography}</p>
-            </>
-          )}
-
-          {data.keywords?.length > 0 && (
-            <>
-              <h3>Palavras-chave</h3>
-              <ul>
-                {data.keywords.map((kw, i) => (
-                  <li key={i}>{kw}</li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {data.personal.other_names?.length > 0 && (
-            <>
-              <h3>Outros nomes</h3>
-              <ul>
-                {data.personal.other_names.map((n, i) => (
-                  <li key={i}>{n}</li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {data.personal.urls?.length > 0 && (
-            <>
-              <h3>URLs</h3>
-              <ul>
-                {data.personal.urls.map((url, i) => (
-                  <li key={i}>
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {url}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {data.personal.emails?.length > 0 && (
-            <>
-              <h3>E-mails</h3>
-              <ul>
-                {data.personal.emails.map((e, i) => (
-                  <li key={i}>{e}</li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {data.personal.countries?.length > 0 && (
-            <>
-              <h3>Países</h3>
-              <ul>
-                {data.personal.countries.map((c, i) => (
-                  <li key={i}>{c}</li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {data.personal.external_ids?.length > 0 && (
-            <>
-              <h3>Identificadores externos</h3>
-              <ul>
-                {data.personal.external_ids.map((ex, i) => (
-                  <li key={i}>
-                    {ex.type}: {ex.value}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </aside>
-      )}
-
+      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} data={data} />
+      <header className="dashboard-header">
+        <div className="logo">
+          <img src="../img/logo.png" alt="Logo da Plataforma" className="logo-img" />
+        </div>
+        <div className="header-controls">
+          <button className="theme-toggle" onClick={toggleDarkMode}>
+            {darkMode ? <FaSun /> : <FaMoon />}
+          </button>
+        </div>
+      </header>
       <main className="main-content">
-        <header className="main-header">
+        <div className="profile-box">
           <h1>{data.personal.full_name}</h1>
-        </header>
-
-        <section className="search-section">
-          <input
-            type="text"
-            placeholder="Buscar trabalhos por título..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <FaSearch className="search-icon" />
-        </section>
-
-        <section className="results-panel">
-          {filteredWorks.length > 0 ? (
-            <ul>
-              {filteredWorks.map((w, i) => (
-                <li key={i}>
-                  {w.title} <em>({w.year})</em>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>Nenhum trabalho encontrado.</p>
+          {data.employments?.some((e) => !e.end_date) && (
+            <div className="active-jobs">
+              {data.employments
+                .filter((e) => !e.end_date)
+                .map((e, i) => (
+                  <div key={i} className="job-entry">
+                    <p className="position">{e.role_title}</p>
+                    <p className="affiliation">{e.organization}</p>
+                  </div>
+                ))}
+            </div>
           )}
-        </section>
+          {data.keywords?.length > 0 && (
+            <div className="keywords">
+              {data.keywords.map((kw, i) => (
+                <button key={i} className="keyword-button" onClick={() => handleKeywordClick(kw)}>
+                  {kw}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="tabs modern-tabs" style={{ width: "100%" }}>
+          {["Biografia", "Publicações", "Métricas"].map((tab) => (
+            <button key={tab} onClick={() => setTab(tab)} className={`modern-tab-button ${selectedTab === tab ? "active" : ""}`}>
+              {tab}
+            </button>
+          ))}
+        </div>
+        <div className="tab-content">
+          {selectedTab === "Biografia" && (hasBio || hasEmployments || hasEducations ? (
+            <div className="bio-two-column">
+              {hasBio && (
+                <div className="bio-card">
+                  <h3 className="section-title"><FaRegUser className="section-icon" /> Sobre</h3>
+                  <div className={`bio-text ${showFullBio ? "expanded" : "collapsed"}`}>
+                    {data.personal.biography}
+                  </div>
+                  {data.personal.biography.length > 500 && (
+                    <button className="see-more-button" onClick={() => setShowFullBio((prev) => !prev)}>
+                      {showFullBio ? "Ver menos" : "Ver mais"}
+                    </button>
+                  )}
+                </div>
+              )}
+              {hasEmployments && (
+                <div className="bio-card">
+                  <h3 className="section-title"><MdOutlineWorkOutline className="section-icon" /> Empregos e cargos</h3>
+                  {data.employments.map((job, i) => (
+                    <div key={i} className="employment-entry">
+                      <p className="position">{job.role_title}</p>
+                      <p className="affiliation">
+                        {job.organization}
+                        {(job.start_date || job.end_date) && <> ({(job.start_date || "?")} – {job.end_date || "atual"})</>}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {hasEducations && (
+                <div className="bio-card full-width">
+                  <h3 className="section-title"><PiStudentBold className="section-icon" /> Educação e qualificações</h3>
+                  <div className="education-grid">
+                    {data.educations.map((edu, i) => (
+                      <div key={i} className="education-block">
+                        <p className="edu-institution">{edu.organization}</p>
+                        <p className="edu-details">{edu.start_date}</p>
+                        <p className="edu-details">{edu.degree_title}</p>
+                        {edu.areas?.length > 0 && <p className="edu-areas">{edu.areas.join(", ")}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>Nenhuma informação biográfica disponível para este perfil.</p>
+            </div>
+          ))}
+
+          {selectedTab === "Publicações" && (
+            <>
+              <section className="search-section">
+                <input type="text" placeholder="Buscar trabalhos por título..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <FaSearch className="search-icon" />
+              </section>
+              <FilterPanel years={Array.from(new Set(data.works.map((w) => w.year))).sort((a, b) => b - a)} filterYear={yearFilter} setFilterYear={setYearFilter} filterSortCitations={citationSort} setFilterSortCitations={setCitationSort} />
+              <section className="results-panel">
+                {filteredWorks.length > 0 ? (
+                  <ul>
+                    {filteredWorks.map((w, i) => (
+                      <li key={i}>
+                        {w.url ? <a href={w.url} target="_blank" rel="noopener noreferrer" className="publication-link">{w.title} <em>({w.year})</em></a> : <>{w.title} <em>({w.year})</em></>}
+                      </li>
+                    ))}
+                  </ul>
+                ) : <p>Nenhum trabalho encontrado.</p>}
+              </section>
+            </>
+          )}
+
+          {selectedTab === "Métricas" && (
+            <div className="metrics-layout">
+              <div className="chart-container-card">
+                <h3 className="section-title chart-title">Crescimento de Produção Científica & Métricas Chave</h3>
+                <ChartsSection orcidId={authorId} />
+              </div>
+              <AggregatedMetrics orcidId={authorId} />
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );
