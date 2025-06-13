@@ -61,11 +61,44 @@ def get_name(orcid_id: str):
 @app.get("/orcid/{orcid_id}/works")
 def get_works(orcid_id: str):
     """
-    Busca todas as obras do ORCID e formata usando a função `format_works`.
+    Busca todas as obras do ORCID, obtém contagem de citações para cada uma
     """
-    raw = fetch_orcid(orcid_id, section="works")
-    works_list = format_orcid_works(raw or {})
-    return {"works": works_list}
+    # Normaliza ORCID e busca obras
+    orcid_norm = normalize_orcid(orcid_id)
+    raw       = fetch_orcid(orcid_norm, section="works") or {}
+    works     = format_orcid_works(raw) or []
+
+    # Monta dicionário de DOIs para passar ao serviço de citações
+    #    chave = "doi:<doi_normalizado>"
+    ids_para_cit: Dict[str, int] = {}
+    for w in works:
+        doi = w.get("doi")
+        if doi:
+            d_norm = normalize_doi(doi)
+            ids_para_cit[f"doi:{d_norm}"] = w.get("year", 0)
+
+    # Busca as contagens de citação
+    try:
+        doi_to_cit = fetch_citations(ids_para_cit)
+    except Exception as e:
+        # caso fetch_citations lance HTTPException, propaga
+        if isinstance(e, HTTPException):
+            raise
+        raise HTTPException(status_code=502, detail=f"Erro ao obter citações: {e}")
+
+    # Anexa cited_by_count a cada obra
+    for w in works:
+        doi = w.get("doi")
+        if doi:
+            key = f"doi:{normalize_doi(doi)}"
+            w["cited_by_count"] = doi_to_cit.get(key, 0)
+        else:
+            w["cited_by_count"] = 0
+
+    return {
+        "orcid_id": orcid_norm,
+        "works": works
+    }
 
 @app.get("/orcid/{orcid_id}/works_with_authors")
 def get_works_authors(orcid_id: str):
@@ -79,7 +112,6 @@ def get_works_authors(orcid_id: str):
         return {"works": works}
     except HTTPException:
         raise
-
 
 @app.get("/orcid/{orcid_id}/works-openalex")
 def get_works_from_openalex(orcid_id: str):
@@ -141,18 +173,6 @@ def get_all(orcid_id: str):
     edu       = fetch_orcid(orcid_id, section="educations")
     works     = fetch_orcid(orcid_id, section="works")
 
-
-    # try:
-    #    works = format_orcid_works_with_contributors(orcid_id)
-    # except HTTPException:
-    #    works = []
-
-    # Via OpenAlex
-    # try:
-    #     works_oa = format_works_from_openalex(orcid_id)
-    # except HTTPException:
-    #     works_oa = []
-
     if not basic:
         raise HTTPException(status_code=404, detail="ORCID não encontrado")
 
@@ -164,8 +184,6 @@ def get_all(orcid_id: str):
         "employments":  format_employment(emp or {}),
         "educations":   format_education_and_qualifications(edu or {})
     }
-
-
 
 # ========== requisições de filtro ===========
 
