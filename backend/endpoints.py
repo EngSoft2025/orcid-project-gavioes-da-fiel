@@ -19,7 +19,7 @@ from api_clients.orcid_client import (
     format_employment,
     format_education_and_qualifications,
     format_works as format_orcid_works,
-    format_works_with_contributors as format_orcid_works_with_contributors 
+    format_works_with_contributors 
 )
 
 from api_clients.openalex_client import (
@@ -463,3 +463,73 @@ def get_orcid_stats(orcid_id: str):
         "publications": pubs_y,
         "citations": cites_y
     }
+
+
+@app.get("/works/publication/{doi:path}", response_model=Dict[str, Any])
+def get_publication(doi: str) -> Dict[str, Any]:
+    """
+    Busca detalhes de uma obra pelo DOI via OpenAlex e orcid
+    """
+    # Normaliza o DOI
+    d_norm = normalize_doi(doi)
+    key = f"doi:{d_norm}"
+
+    # Busca no OpenAlex
+    oa_url = f"https://api.openalex.org/works/{key}"
+    try:
+        resp_oa = requests.get(oa_url, timeout=10)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro ao conectar ao OpenAlex: {e}")
+    if resp_oa.status_code == 404:
+        raise HTTPException(status_code=404, detail="Obra não encontrada no OpenAlex para esse DOI")
+    if resp_oa.status_code != 200:
+        raise HTTPException(status_code=resp_oa.status_code, detail="Erro ao buscar obra no OpenAlex")
+    work_oa = resp_oa.json()
+
+    # Extrai ORCID do primeiro da lista
+    first_orcid_url = next(
+        (a["author"]["orcid"] for a in work_oa.get("authorships", [])
+         if a.get("author", {}).get("orcid")),
+        None
+    )
+
+    # Busca e filtra registro único do trabalho
+    orcid_rec: Optional[Dict[str, Any]] = None
+    if first_orcid_url:
+        oid = normalize_orcid(first_orcid_url)
+        raw = fetch_orcid(oid, section="works") or {}
+        formatted = format_orcid_works(raw) or []
+        for w in formatted:
+            if w.get("doi") and normalize_doi(w["doi"]) == d_norm:
+                orcid_rec = w
+                orcid_rec["orcid_id"] = oid
+                break
+
+    # Monta dicionário único, eliminando duplicatas
+    result: Dict[str, Any] = {
+        "doi":             d_norm,
+        "id":              work_oa.get("id"),
+        "title":           work_oa.get("display_name"),
+        "publication_year": work_oa.get("publication_year"),
+        "type":            work_oa.get("type"),
+        "cited_by_count":  work_oa.get("cited_by_count"),
+        "authorships":     [
+            {
+                "author_name":  a["author"].get("display_name"),
+                "author_orcid": a["author"].get("orcid")
+            }
+            for a in work_oa.get("authorships", [])
+        ]
+    }
+
+    if orcid_rec:
+        for fld in ("container", "url", "path"):
+            if orcid_rec.get(fld) and fld not in result:
+                result[fld] = orcid_rec[fld]
+                
+        # se ano na ORCID for string e diferente, garante coerência
+        yr = orcid_rec.get("year")
+        if int(yr) and int(result["publication_year"]) != int(yr):
+            result["orcid_publication_year"] = yr
+
+    return result
