@@ -6,8 +6,11 @@ import logging
 from collections import Counter
 import re
 import requests
+import xml.etree.ElementTree as ET
+from xml.dom.minidom import parseString
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from api_clients.orcid_client import (
@@ -39,6 +42,30 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+def dict_to_xml(data: Any, root: ET.Element):
+    """
+    Converte recursivamente um dicionário ou lista para elementos XML.
+    """
+    if isinstance(data, dict):
+        for key, value in data.items():
+            # Remove caracteres inválidos de nomes de tags
+            safe_key = re.sub(r'[^a-zA-Z0-9_.-]', '_', key)
+            child = ET.SubElement(root, safe_key)
+            dict_to_xml(value, child)
+    elif isinstance(data, list):
+        # Para listas, cria um elemento para cada item
+        singular_tag = root.tag.rstrip('s') # Ex: 'works' -> 'work'
+        if singular_tag == root.tag: # Se não terminar com 's', usa 'item'
+            singular_tag = 'item'
+
+        for item in data:
+            child = ET.SubElement(root, singular_tag)
+            dict_to_xml(item, child)
+    else:
+        # Define o valor como texto do elemento, tratando o None
+        if data is not None:
+            root.text = str(data)
+
 
 @app.get("/orcid/search/name", response_model=List[Dict[str, str]])
 def search_name(query: str, max_results: int = 10) -> List[Dict[str, str]]:
@@ -184,6 +211,44 @@ def get_all(orcid_id: str):
         "employments":  format_employment(emp or {}),
         "educations":   format_education_and_qualifications(edu or {})
     }
+
+@app.get("/orcid/{orcid_id}/export/xml")
+def export_researcher_xml(orcid_id: str):
+    """
+    Exporta todos os dados de um pesquisador para um arquivo XML.
+    """
+    try:
+        # 1. Obter todos os dados do pesquisador em formato JSON
+        researcher_data = get_all(orcid_id)
+        
+        # 2. Criar o elemento raiz do XML
+        root = ET.Element('researcher', attrib={'orcid': orcid_id})
+        
+        # 3. Converter o dicionário para a estrutura XML
+        dict_to_xml(researcher_data, root)
+        
+        # 4. Converter a árvore de elementos para uma string XML
+        # Usamos 'minidom' para indentar o XML e torná-lo mais legível
+        rough_string = ET.tostring(root, 'utf-8')
+        reparsed = parseString(rough_string)
+        pretty_xml_string = reparsed.toprettyxml(indent="  ", encoding="utf-8")
+
+        # 5. Retornar a resposta como um arquivo XML para download
+        return Response(
+            content=pretty_xml_string,
+            media_type="application/xml",
+            headers={
+                'Content-Disposition': f'attachment; filename="{orcid_id}.xml"'
+            }
+        )
+        
+    except HTTPException as e:
+        # Repassa exceções HTTP (como 404 Not Found)
+        raise e
+    except Exception as e:
+        # Captura outros erros inesperados
+        logging.exception(f"Erro ao gerar XML para o ORCID {orcid_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Falha ao gerar o arquivo XML: {e}")
 
 # ========== requisições de filtro ===========
 
