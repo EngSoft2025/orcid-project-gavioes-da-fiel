@@ -22,7 +22,7 @@ from api_clients.orcid_client import (
     format_employment,
     format_education_and_qualifications,
     format_works as format_orcid_works,
-    format_works_with_contributors as format_orcid_works_with_contributors 
+    format_works_with_contributors 
 )
 
 from api_clients.openalex_client import (
@@ -88,11 +88,44 @@ def get_name(orcid_id: str):
 @app.get("/orcid/{orcid_id}/works")
 def get_works(orcid_id: str):
     """
-    Busca todas as obras do ORCID e formata usando a função `format_works`.
+    Busca todas as obras do ORCID, obtém contagem de citações para cada uma
     """
-    raw = fetch_orcid(orcid_id, section="works")
-    works_list = format_orcid_works(raw or {})
-    return {"works": works_list}
+    # Normaliza ORCID e busca obras
+    orcid_norm = normalize_orcid(orcid_id)
+    raw       = fetch_orcid(orcid_norm, section="works") or {}
+    works     = format_orcid_works(raw) or []
+
+    # Monta dicionário de DOIs para passar ao serviço de citações
+    #    chave = "doi:<doi_normalizado>"
+    ids_para_cit: Dict[str, int] = {}
+    for w in works:
+        doi = w.get("doi")
+        if doi:
+            d_norm = normalize_doi(doi)
+            ids_para_cit[f"doi:{d_norm}"] = w.get("year", 0)
+
+    # Busca as contagens de citação
+    try:
+        doi_to_cit = fetch_citations(ids_para_cit)
+    except Exception as e:
+        # caso fetch_citations lance HTTPException, propaga
+        if isinstance(e, HTTPException):
+            raise
+        raise HTTPException(status_code=502, detail=f"Erro ao obter citações: {e}")
+
+    # Anexa cited_by_count a cada obra
+    for w in works:
+        doi = w.get("doi")
+        if doi:
+            key = f"doi:{normalize_doi(doi)}"
+            w["cited_by_count"] = doi_to_cit.get(key, 0)
+        else:
+            w["cited_by_count"] = 0
+
+    return {
+        "orcid_id": orcid_norm,
+        "works": works
+    }
 
 @app.get("/orcid/{orcid_id}/works_with_authors")
 def get_works_authors(orcid_id: str):
@@ -106,7 +139,6 @@ def get_works_authors(orcid_id: str):
         return {"works": works}
     except HTTPException:
         raise
-
 
 @app.get("/orcid/{orcid_id}/works-openalex")
 def get_works_from_openalex(orcid_id: str):
@@ -168,18 +200,6 @@ def get_all(orcid_id: str):
     edu       = fetch_orcid(orcid_id, section="educations")
     works     = fetch_orcid(orcid_id, section="works")
 
-
-    # try:
-    #    works = format_orcid_works_with_contributors(orcid_id)
-    # except HTTPException:
-    #    works = []
-
-    # Via OpenAlex
-    # try:
-    #     works_oa = format_works_from_openalex(orcid_id)
-    # except HTTPException:
-    #     works_oa = []
-
     if not basic:
         raise HTTPException(status_code=404, detail="ORCID não encontrado")
 
@@ -229,8 +249,6 @@ def export_researcher_xml(orcid_id: str):
         # Captura outros erros inesperados
         logging.exception(f"Erro ao gerar XML para o ORCID {orcid_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Falha ao gerar o arquivo XML: {e}")
-
-
 
 # ========== requisições de filtro ===========
 
@@ -510,3 +528,73 @@ def get_orcid_stats(orcid_id: str):
         "publications": pubs_y,
         "citations": cites_y
     }
+
+
+@app.get("/works/publication/{doi:path}", response_model=Dict[str, Any])
+def get_publication(doi: str) -> Dict[str, Any]:
+    """
+    Busca detalhes de uma obra pelo DOI via OpenAlex e orcid
+    """
+    # Normaliza o DOI
+    d_norm = normalize_doi(doi)
+    key = f"doi:{d_norm}"
+
+    # Busca no OpenAlex
+    oa_url = f"https://api.openalex.org/works/{key}"
+    try:
+        resp_oa = requests.get(oa_url, timeout=10)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro ao conectar ao OpenAlex: {e}")
+    if resp_oa.status_code == 404:
+        raise HTTPException(status_code=404, detail="Obra não encontrada no OpenAlex para esse DOI")
+    if resp_oa.status_code != 200:
+        raise HTTPException(status_code=resp_oa.status_code, detail="Erro ao buscar obra no OpenAlex")
+    work_oa = resp_oa.json()
+
+    # Extrai ORCID do primeiro da lista
+    first_orcid_url = next(
+        (a["author"]["orcid"] for a in work_oa.get("authorships", [])
+         if a.get("author", {}).get("orcid")),
+        None
+    )
+
+    # Busca e filtra registro único do trabalho
+    orcid_rec: Optional[Dict[str, Any]] = None
+    if first_orcid_url:
+        oid = normalize_orcid(first_orcid_url)
+        raw = fetch_orcid(oid, section="works") or {}
+        formatted = format_orcid_works(raw) or []
+        for w in formatted:
+            if w.get("doi") and normalize_doi(w["doi"]) == d_norm:
+                orcid_rec = w
+                orcid_rec["orcid_id"] = oid
+                break
+
+    # Monta dicionário único, eliminando duplicatas
+    result: Dict[str, Any] = {
+        "doi":             d_norm,
+        "id":              work_oa.get("id"),
+        "title":           work_oa.get("display_name"),
+        "publication_year": work_oa.get("publication_year"),
+        "type":            work_oa.get("type"),
+        "cited_by_count":  work_oa.get("cited_by_count"),
+        "authorships":     [
+            {
+                "author_name":  a["author"].get("display_name"),
+                "author_orcid": a["author"].get("orcid")
+            }
+            for a in work_oa.get("authorships", [])
+        ]
+    }
+
+    if orcid_rec:
+        for fld in ("container", "url", "path"):
+            if orcid_rec.get(fld) and fld not in result:
+                result[fld] = orcid_rec[fld]
+                
+        # se ano na ORCID for string e diferente, garante coerência
+        yr = orcid_rec.get("year")
+        if int(yr) and int(result["publication_year"]) != int(yr):
+            result["orcid_publication_year"] = yr
+
+    return result
