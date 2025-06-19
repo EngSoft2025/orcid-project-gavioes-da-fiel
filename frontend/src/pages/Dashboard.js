@@ -320,15 +320,17 @@ function Dashboard() {
             </>
           )}
 
-          {selectedTab === "Métricas" && filteredWorks.length > 0 ? (
-            <div className="metrics-layout">
-              <div className="chart-container-card">
-                <h3 className="section-title chart-title">Crescimento de Produção Científica & Métricas Chave</h3>
-                <ChartsSection orcidId={authorId} />
+          {selectedTab === "Métricas" ? (
+            filteredWorks.length > 0 ? (
+              <div className="metrics-layout">
+                <div className="chart-container-card">
+                  <h3 className="section-title chart-title">Crescimento de Produção Científica & Métricas Chave</h3>
+                  <ChartsSection orcidId={authorId} />
+                </div>
+                <AggregatedMetrics orcidId={authorId} />
               </div>
-              <AggregatedMetrics orcidId={authorId} />
-            </div>
-          ) : <p>Nenhum trabalho encontrado.</p>}
+            ) : (<p>Nenhum trabalho encontrado.</p>)
+          ) : null}
         </div>
 
         {/* Modal para exibir detalhes do trabalho */}

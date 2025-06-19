@@ -4,13 +4,13 @@ import re
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
-<<<<<<< HEAD
-=======
+# <<<<<<< HEAD
+# =======
 import logging
 from fastapi import Response, HTTPException
 from xml.dom.minidom import parseString
 
->>>>>>> feature/visualização-de-detalhes-da-pesquisa-do-pesquisador
+# >>>>>>> feature/visualização-de-detalhes-da-pesquisa-do-pesquisador
 # Regex para normalização
 _DOI_RE = re.compile(r"^https?://(?:dx\.)?doi\.org/|^doi:\s*", re.I)
 _ORCID_URL_RE = re.compile(r"^https?://orcid\.org/", re.I)
