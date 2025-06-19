@@ -73,7 +73,7 @@ project_root/
 │
 ├── README.md                   # Documentação geral do projeto
 └── LICENSE                     # Termos de licença
-
+```
 ---
 
 ## <div id="instalacao"></div> Instalação e Uso

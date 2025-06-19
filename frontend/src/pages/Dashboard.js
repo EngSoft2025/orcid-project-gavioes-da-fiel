@@ -1,14 +1,13 @@
 // src/pages/Dashboard.js
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-// FaUserGraduate removed as it was unused
 import { FaSearch, FaMoon, FaSun } from "react-icons/fa";
 import "../Dashboard.css";
 import LoadingDrop from "../components/LoadingDrop";
 import Sidebar from "../components/Sidebar";
 import ChartsSection from "../components/ChartsSection";
 import FilterPanel from "../components/filtros";
-import AggregatedMetrics from "../components/AggregatedMetrics"; // Import the new component
+import AggregatedMetrics from "../components/AggregatedMetrics";
 import { PiStudentBold } from "react-icons/pi";
 import { FaRegUser } from "react-icons/fa";
 import { MdOutlineWorkOutline } from "react-icons/md";
@@ -18,16 +17,16 @@ function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [citationSort, setCitationSort] = useState("");
   const [filteredWorks, setFilteredWorks] = useState([]);
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [selectedTab, setTab] = useState("Biografia");
   const [showFullBio, setShowFullBio] = useState(false);
+  const [selectedWork, setSelectedWork] = useState(null);
+  const [isModalClosing, setIsModalClosing] = useState(false);
 
   useEffect(() => {
     document.body.classList.toggle("dark", darkMode);
@@ -43,7 +42,26 @@ function Dashboard() {
         const res = await fetch(`http://localhost:8000/orcid/${authorId}/all`);
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const json = await res.json();
-        setData(json);
+
+      // Faz fetch dos cited_by_count
+        const citRes = await fetch(`http://localhost:8000/orcid/${authorId}/works/filter_by_citations`);
+        if (!citRes.ok) throw new Error(`Status ${citRes.status}`);
+        const citJson = await citRes.json();
+        const worksWithCitations = citJson.works_sorted_by_citations;
+
+        const updatedWorks = (json.works || []).map(work => {
+          const matching = worksWithCitations.find(w => w.doi === work.doi);
+          return {
+            ...work,
+            cited_by_count: matching?.cited_by_count ?? 0,
+          };
+        });
+
+        setData({
+          ...json,
+          works: updatedWorks,
+        });
+
       } catch (err) {
         setError(err.message);
       } finally {
@@ -52,6 +70,7 @@ function Dashboard() {
     }
     fetchAll();
   }, [authorId]);
+
 
   const handleKeywordClick = async (keyword) => {
     if (!keyword) return;
@@ -98,6 +117,59 @@ function Dashboard() {
     fetchAndFilterWorks();
   }, [authorId, data, searchTerm, yearFilter, citationSort]);
 
+  const handleWorkClick = async (work, e) => {
+    if (e) e.preventDefault();
+    if (!work?.doi) {
+      setSelectedWork(work); // fallback
+      return;
+    }
+    console.log(work);
+
+    setLoading(true);
+    try {
+      const encodedDoi = encodeURIComponent(work.doi);
+      const res = await fetch(`http://localhost:8000/works/publication/${encodedDoi}`);
+      if (!res.ok) throw new Error("Erro ao buscar detalhes da publicação");
+
+      const detailedWork = await res.json();
+      setSelectedWork(detailedWork);
+    } catch (err) {
+      console.error("Erro ao buscar detalhes do trabalho:", err);
+      setSelectedWork(work); // fallback
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleDownloadXML = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/orcid/${authorId}/export/xml`);
+      if (!response.ok) throw new Error("Erro ao baixar XML");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `perfil_${authorId}.xml`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Erro ao baixar o XML:", error);
+      alert("Falha ao baixar o arquivo XML.");
+    }
+  };
+
+
+  const handleCloseModal = () => {
+    setIsModalClosing(true);
+    setTimeout(() => {
+      setSelectedWork(null);
+      setIsModalClosing(false);
+    }, 300);
+  };
+  
+
   if (loading && !data) return <LoadingDrop />;
   if (error) return <p className="error">Erro: {error}</p>;
   if (!data) return null;
@@ -106,6 +178,8 @@ function Dashboard() {
   const hasEmployments = Array.isArray(data.employments) && data.employments.length > 0;
   const hasEducations = Array.isArray(data.educations) && data.educations.length > 0;
 
+
+  
   return (
     <div className="dashboard-container">
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} data={data} />
@@ -129,7 +203,10 @@ function Dashboard() {
                 .map((e, i) => (
                   <div key={i} className="job-entry">
                     <p className="position">{e.role_title}</p>
-                    <p className="affiliation">{e.organization}</p>
+                    <p className="affiliation">
+                      {e.organization}
+                      {(e.start_date || e.end_date) && <> ({e.start_date || "?"} – {e.end_date || "atual"})</>}
+                    </p>
                   </div>
                 ))}
             </div>
@@ -143,6 +220,9 @@ function Dashboard() {
               ))}
             </div>
           )}
+          <button onClick={handleDownloadXML} className="download-button">
+             Baixar XML do Perfil
+          </button>
         </div>
         <div className="tabs modern-tabs" style={{ width: "100%" }}>
           {["Biografia", "Publicações", "Métricas"].map((tab) => (
@@ -170,12 +250,12 @@ function Dashboard() {
               {hasEmployments && (
                 <div className="bio-card">
                   <h3 className="section-title"><MdOutlineWorkOutline className="section-icon" /> Empregos e cargos</h3>
-                  {data.employments.map((job, i) => (
+                  {data.employments.map((e, i) => (
                     <div key={i} className="employment-entry">
-                      <p className="position">{job.role_title}</p>
+                      <p className="position">{e.role_title}</p>
                       <p className="affiliation">
-                        {job.organization}
-                        {(job.start_date || job.end_date) && <> ({(job.start_date || "?")} – {job.end_date || "atual"})</>}
+                        {e.organization}
+                        {(e.start_date || e.end_date) && <> ({e.start_date || "?"} – {e.end_date || "atual"})</>}
                       </p>
                     </div>
                   ))}
@@ -209,13 +289,29 @@ function Dashboard() {
                 <input type="text" placeholder="Buscar trabalhos por título..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 <FaSearch className="search-icon" />
               </section>
-              <FilterPanel years={Array.from(new Set(data.works.map((w) => w.year))).sort((a, b) => b - a)} filterYear={yearFilter} setFilterYear={setYearFilter} filterSortCitations={citationSort} setFilterSortCitations={setCitationSort} />
+              <FilterPanel 
+                years={Array.from(new Set(data.works.map((w) => w.year))).sort((a, b) => b - a)} 
+                filterYear={yearFilter} 
+                setFilterYear={setYearFilter} 
+                filterSortCitations={citationSort} 
+                setFilterSortCitations={setCitationSort} 
+              />
               <section className="results-panel">
                 {filteredWorks.length > 0 ? (
                   <ul>
                     {filteredWorks.map((w, i) => (
-                      <li key={i}>
-                        {w.url ? <a href={w.url} target="_blank" rel="noopener noreferrer" className="publication-link">{w.title} <em>({w.year})</em></a> : <>{w.title} <em>({w.year})</em></>}
+                      <li 
+                        key={i} 
+                        onClick={(e) => handleWorkClick(w, e)} 
+                        className="clickable-work"
+                      >
+                        <div>
+                          {w.title} <em>({w.year || "—"})</em>
+                          {w.url && <span className="external-link-icon"> ↗</span>}
+                        </div>
+                        <div className="citation-count">
+                          {w.cited_by_count ?? 0} citações
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -224,7 +320,7 @@ function Dashboard() {
             </>
           )}
 
-          {selectedTab === "Métricas" && (
+          {selectedTab === "Métricas" && filteredWorks.length > 0 ? (
             <div className="metrics-layout">
               <div className="chart-container-card">
                 <h3 className="section-title chart-title">Crescimento de Produção Científica & Métricas Chave</h3>
@@ -232,8 +328,70 @@ function Dashboard() {
               </div>
               <AggregatedMetrics orcidId={authorId} />
             </div>
-          )}
+          ) : <p>Nenhum trabalho encontrado.</p>}
         </div>
+
+        {/* Modal para exibir detalhes do trabalho */}
+        {selectedWork && (
+          <div 
+            className={`work-modal-overlay ${isModalClosing ? 'closing' : ''}`}
+            onClick={handleCloseModal}
+          >
+            <div className="work-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close-button" onClick={handleCloseModal}>
+                &times;
+              </button>
+
+              <h3 className="modal-title">{selectedWork.title}</h3>
+
+              {selectedWork.authorships?.length > 0 && (
+                <p className="modal-authors">
+                  {selectedWork.authorships.map((a, i) => (
+                    <React.Fragment key={a.author_orcid}>
+                      <span
+                        onClick={() => window.open(a.author_orcid, "_blank")}
+                        className="author-hover"
+                      >
+                        {a.author_name}
+                      </span>
+                      {i < selectedWork.authorships.length - 1 && ", "}
+                    </React.Fragment>
+                  ))}
+                </p>
+              )}
+              <p className="modal-subinfo">
+                {selectedWork.publication_year || selectedWork.orcid_publication_year} · {selectedWork.container || "Periódico desconhecido"}
+              </p>
+
+              <div className="modal-details">
+                <p><strong>Tipo:</strong> {selectedWork.type || "—"}</p>
+                {selectedWork.doi && (
+                  <p><strong>DOI:</strong> <a href={`https://doi.org/${selectedWork.doi}`} target="_blank" rel="noopener noreferrer">{selectedWork.doi}</a></p>
+                )}
+              </div>
+
+              <div className="modal-footer">
+                  <div className="metric-square">
+                    <span className="metric-label">Citações</span>
+                    <br></br>
+                    <span className="metric-value">{selectedWork.cited_by_count ?? 0}</span>
+                  </div>
+                  {selectedWork.url && (
+                    <a
+                      href={selectedWork.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="modal-link-button"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Ver publicação
+                    </a>
+                  )}
+                </div>
+            </div>
+
+          </div>
+        )}
       </main>
     </div>
   );

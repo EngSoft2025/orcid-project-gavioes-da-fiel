@@ -48,6 +48,7 @@ export default function Home() {
         );
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const obj = await res.json();
+        navigate(`/dashboard/${searchTerm}`)
         data = [{ orcid: searchTerm, full_name: obj.full_name }];
       } else {
         const res = await fetch(

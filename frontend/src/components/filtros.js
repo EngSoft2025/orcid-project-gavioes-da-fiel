@@ -27,13 +27,13 @@ function FilterPanel({
       </div>
 
       <div className="filter-group">
-        <label htmlFor="citations-select">Ordenar por Citações</label>
+        <label htmlFor="citations-select">Ordenar por</label>
         <select
           id="citations-select"
           value={filterSortCitations}
           onChange={(e) => setFilterSortCitations(e.target.value)}
         >
-          <option value="">Padrão</option>
+          <option value="">Mais recentes</option>
           <option value="desc">Mais citadas</option>
         </select>
       </div>
