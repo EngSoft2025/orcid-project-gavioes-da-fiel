@@ -14,7 +14,7 @@ from app.services.orcid_service import (
     get_orcid_metrics,
     get_orcid_stats,
 )
-from app.utils.utils import normalize_orcid
+from app.utils.utils import normalize_orcid, xml_response
 
 router = APIRouter()
 
@@ -112,3 +112,13 @@ def stats(orcid_id: str):
     """
     oid = normalize_orcid(orcid_id)
     return get_orcid_stats(oid)
+
+
+@router.get("/{orcid_id}/export/xml")
+def export_researcher_xml(orcid_id: str):
+    """
+    Exporta todos os dados de um pesquisador para um arquivo XML.
+    """
+    oid = normalize_orcid(orcid_id)
+    data = get_all_data(oid)
+    return xml_response(data, oid)

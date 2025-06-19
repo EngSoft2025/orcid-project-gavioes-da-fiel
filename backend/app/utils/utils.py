@@ -4,6 +4,10 @@ import re
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
+import logging
+from fastapi import Response, HTTPException
+from xml.dom.minidom import parseString
+
 # Regex para normalização
 _DOI_RE = re.compile(r"^https?://(?:dx\.)?doi\.org/|^doi:\s*", re.I)
 _ORCID_URL_RE = re.compile(r"^https?://orcid\.org/", re.I)
@@ -103,3 +107,36 @@ def dict_to_xml(data: Any, root: ET.Element):
     else:
         if data is not None:
             root.text = str(data)
+
+
+def build_pretty_xml(data: Any, root_tag: str, attrib: Dict[str, str]) -> bytes:
+    """
+    Constrói um XML indentado a partir de um dict,
+    usando como elemento raiz `root_tag` e atributos em `attrib`.
+    Retorna bytes UTF-8 com o XML formatado.
+    """
+    root = ET.Element(root_tag, attrib=attrib)
+    dict_to_xml(data, root)
+    rough = ET.tostring(root, 'utf-8')
+    reparsed = parseString(rough)
+    return reparsed.toprettyxml(indent="  ", encoding="utf-8")
+
+
+def xml_response(data: Any, orcid_id: str) -> Response:
+    """
+    Gera um Response FastAPI com download de XML para os dados fornecidos.
+    Lança 404 se `data` vazio, 500 em erro interno.
+    """
+    if not data:
+        raise HTTPException(status_code=404, detail="ORCID não encontrado")
+    try:
+        xml_bytes = build_pretty_xml(data, 'researcher', {'orcid': orcid_id})
+        return Response(
+            content=xml_bytes,
+            media_type='application/xml',
+            headers={'Content-Disposition': f'attachment; filename="{orcid_id}.xml"'}
+        )
+    except Exception as e:
+        logging.exception(f"Erro ao gerar XML para {orcid_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Falha ao gerar XML: {e}")
+
