@@ -1,4 +1,3 @@
-````markdown
 # ORCID & OpenAlex Backend
 
 Este é o servidor FastAPI que expõe endpoints para consulta de dados de autores e publicações usando as APIs do ORCID e do OpenAlex.
@@ -56,7 +55,4 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
-```
-
-```
 ```
