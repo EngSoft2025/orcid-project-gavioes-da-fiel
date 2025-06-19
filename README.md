@@ -35,33 +35,44 @@ A proposta do projeto **Gaviões da Fiel**, com a aplicação **Pinga Dados**, �
 ```bash
 orcid-project-gavioes-da-fiel/
 │
-├── backend/                    # Lógica de servidor e integração com APIs
-│   ├── api_clients/            # Clientes para integração com APIs externas
-│   │   ├── __init__.py
-│   │   ├── openalex_client.py
-│   │   └── orcid_client.py
-│   ├── endpoints.py            # Endpoints principais da API
-│   ├── requirements.txt        # Dependências Python
-│   └── README.md               # Documentação específica do backend
+project_root/
+├── backend/                    # Backend: lógica de servidor e integração com APIs
+│   ├── app/                    
+│   │   ├── main.py             # Entrada da aplicação: instancia e configura FastAPI
+│   │   ├── routers/            # Definição de rotas/endpoints
+│   │   │   ├── orcid.py        
+│   │   │   ├── filters.py      
+│   │   │   └── works_publication.py  
+│   │   ├── services/           # Lógica de negócio e integração com clientes de API
+│   │   │   ├── orcid_service.py     
+│   │   │   └── openalex_service.py   
+│   │   └── utils/              # Helpers e utilitários gerais
+│   │       └── utils.py        
+│   ├── api_clients/            # Clientes para APIs externas
+│   │   ├── __init__.py         
+│   │   ├── openalex_client.py  
+│   │   └── orcid_client.py     
+│   ├── requirements.txt        
+│   └── README.md               # Documentação do backend
 │
-├── frontend/                   # Aplicação React (interface do usuário)
-│   ├── public/                 # Arquivos públicos (ícones, HTML, imagens)
-│   │   ├── index.html
-│   │   ├── data/
-│   │   └── img/
+├── frontend/                   # Frontend: aplicação React
+│   ├── public/                 
+│   │   ├── index.html          
+│   │   ├── data/               
+│   │   └── img/                
 │   ├── src/                    # Código-fonte React
-│   │   ├── components/         # Componentes reutilizáveis
+│   │   ├── components/         
 │   │   ├── pages/              # Páginas da aplicação
-│   │   ├── App.js
-│   │   ├── App.css
-│   │   ├── index.js
-│   │   ├── Dashboard.css
-│   │   └── LoadingDrop.css
-│   ├── package.json            # Dependências e scripts do projeto
-│   ├── package-lock.json       # Trava exata das versões instaladas
-│   └── README.md               # Instruções específicas do frontend
+│   │   ├── App.js              
+│   │   ├── App.css             
+│   │   ├── index.js            
+│   │   ├── Dashboard.css       
+│   │   └── LoadingDrop.css     
+│   ├── package.json            # Dependências e scripts NPM
+│   └── package-lock.json       # Trava de versões instaladas
 │
-├── README.md                   # Documentação principal do projeto
+├── README.md                   # Documentação geral do projeto
+└── LICENSE                     # Termos de licença
 
 ---
 
@@ -104,7 +115,7 @@ source venv/bin/activate  # No Windows: venv\\Scripts\\activate
 pip install -r requirements.txt
 
 # Rodar servidor FastAPI
-uvicorn endpoints:app --reload
+uvicorn app.main:app --reload --port 8000
 ```
 
 ---
@@ -197,5 +208,3 @@ Um agradecimento especial ao grandioso professor **Seiji Isotani** e a todos os 
 * **Isabela B. S. N. Farias** – 13823833 *(Dev)*
 * **Antônio C. de A. M. Neto** – 14559013 *(Dev)*
 * **Nicolas Carreiro Rodrigues** – 14600801 *(Dev)*
-
-Estudantes de Ciências de Computação – USP
