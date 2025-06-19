@@ -1043,3 +1043,435 @@ body.dark .employment-entry {
     grid-template-columns: 1fr;
   }
 }
+
+/* Modal styles */
+.work-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.work-modal {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.dark .work-modal {
+  background-color: #2c3e50;
+  color: #ecf0f1;
+}
+
+
+.modal-close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #333;
+  padding: 0.5rem;
+  transition: transform 0.2s, color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Adiciona sombra */
+  border-radius: 50%; /* Para fazer a sombra ficar redonda */
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close-button:hover {
+  transform: scale(1.2);
+  color: #e74c3c;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); /* Sombra mais intensa no hover */
+}
+
+.dark .modal-close-button {
+  color: #ecf0f1;
+  background-color: rgba(0, 0, 0, 0.2); /* Fundo escuro para melhor contraste */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dark .modal-close-button:hover {
+  color: #ff6b6b;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.dark .modal-close-button {
+  color: #ecf0f1;
+}
+
+.work-details {
+  margin: 1.5rem 0;
+  line-height: 1.6;
+}
+
+.work-details p {
+  margin-bottom: 0.8rem;
+}
+
+.modal-link-button {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: #3498db;
+  color: white;
+  border-radius: 4px;
+  text-decoration: none;
+  margin-top: 1rem;
+  transition: background-color 0.2s;
+}
+
+.modal-link-button:hover {
+  background-color: #2980b9;
+}
+
+.clickable-work {
+  cursor: pointer;
+  padding: 0.5rem 0;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.clickable-work:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark .clickable-work:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.external-link-icon {
+  margin-left: 0.5rem;
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+/* Dark mode transitions */
+.work-modal,
+.modal-link-button,
+.clickable-work {
+  transition: all 0.3s ease;
+}
+
+/* Animações */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes overlayFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.work-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: overlayFadeIn 0.3s ease-out forwards;
+}
+
+.work-modal-overlay.closing {
+  animation: overlayFadeOut 0.3s ease-out forwards;
+}
+
+.work-modal {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  position: relative;
+  animation: modalFadeIn 0.3s ease-out forwards;
+}
+
+.work-modal-overlay.closing .work-modal {
+  animation: modalFadeOut 0.3s ease-out forwards;
+}
+
+/* Restante do seu CSS... */
+
+/* Estilos do modal */
+.dark .work-modal {
+  background-color: #2c3e50;
+  color: #ecf0f1;
+}
+
+.modal-close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #333;
+  padding: 0.5rem;
+  transition: transform 0.2s, color 0.2s;
+}
+
+.modal-close-button:hover {
+  transform: scale(1.2);
+  color: #e74c3c;
+}
+
+.dark .modal-close-button {
+  color: #ecf0f1;
+}
+
+.dark .modal-close-button:hover {
+  color: #ff6b6b;
+}
+
+.work-details {
+  margin: 1.5rem 0;
+  line-height: 1.6;
+}
+
+.work-details p {
+  margin-bottom: 0.8rem;
+}
+
+.modal-link-button {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: #3498db;
+  color: white;
+  border-radius: 4px;
+  text-decoration: none;
+  margin-top: 1rem;
+  transition: background-color 0.2s;
+}
+
+.modal-link-button:hover {
+  background-color: #2980b9;
+}
+
+.clickable-work {
+  cursor: pointer;
+  padding: 0.5rem 0;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.clickable-work:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark .clickable-work:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.external-link-icon {
+  margin-left: 0.5rem;
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+.download-button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+.download-button:hover {
+  background-color: #388e3c;
+}
+
+.modal-title {
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+}
+
+.modal-authors {
+  margin: 0;
+  font-weight: 500;
+  color: #374151;
+}
+
+.modal-subinfo {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.modal-details {
+  margin-top: 1rem;
+  line-height: 1.6;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.modal-details a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.modal-details a:hover {
+  text-decoration: underline;
+}
+
+.modal-link-button {
+  display: block;
+  text-align: center;
+  background-color: #2563eb;
+  color: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-top: 1.5rem;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.modal-link-button:hover {
+  background-color: #1e40af;
+}
+
+/* Dark mode support */
+.dark .modal-title,
+.dark .modal-authors,
+.dark .modal-subinfo,
+.dark .modal-details {
+  color: #f1f5f9;
+}
+
+.dark .modal-link-button {
+  background-color: #3b82f6;
+}
+
+.dark .modal-link-button:hover {
+  background-color: #2563eb;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 1.5rem;
+}
+
+.metric-square {
+  background: #f3f4f6;
+  border-radius: 8px;
+  min-width: 110px;
+  padding: 14px 18px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.metric-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  line-height: 1;
+}
+
+.metric-label {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.modal-link-button {
+  white-space: nowrap;
+  padding: 12px 20px;
+  margin-left: auto;
+}
+
+@media (max-width: 480px) {
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .modal-link-button {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+.dark .metric-square {
+  background: #1e293b;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+.dark .metric-value {
+  color: #90cdf4;
+}
+
+.dark .metric-label {
+  color: #94a3b8;
+}
+
+.author-hover {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.author-hover:hover {
+  text-decoration: underline;
+  color: #0070f3; /* Ou qualquer cor que combine com seu tema */
+}
+
+.citation-count {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top:  4px;
+}
+
