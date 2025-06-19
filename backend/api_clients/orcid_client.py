@@ -4,6 +4,7 @@ import html
 from typing import List, Dict
 
 import requests
+import unicodedata
 from fastapi import HTTPException
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
@@ -49,13 +50,32 @@ def fetch_orcid(orcid_id: str, section: str = "") -> dict:
     except requests.RequestException as e:
         raise HTTPException(status_code=502, detail=f"Erro ao acessar ORCID: {e}")
 
-def search_orcid_by_name(query: str, max_results: int = 10) -> List[Dict[str, str]]:
+def normalize_name(text: str) -> str:
     """
-    Pesquisa autores no ORCID pelo nome e retorna lista de dicts
-    com {'orcid': ..., 'full_name': ...}.
+    Remove acentuação e coloca em minúsculas para comparação.
+    Ex: "Isôtâni" -> "isotani"
     """
-    q = requests.utils.quote(query)
-    url = f"{BASE_URL}/search/?q={q}&rows={max_results}"
+    nfkd = unicodedata.normalize('NFKD', text)
+    only_ascii = nfkd.encode('ASCII', 'ignore').decode('ASCII')
+    return only_ascii.lower()
+
+def search_orcid_by_name(query: str, max_results: int = 15) -> List[Dict[str, str]]:
+    """
+    Pesquisa autores no ORCID cujo nome contenha todos os termos da query.
+    Usa AND na query da API e filtra localmente para garantir coerência.
+    Retorna lista de dicts {"orcid": ..., "full_name": ...}.
+    """
+    # Normaliza tokens
+    tokens = [normalize_name(tok) for tok in query.split() if tok.strip()]
+    if not tokens:
+        return []
+    
+    # monta query com AND entre termos e URL-encode
+    lucene_q = " AND ".join(tokens)
+    q_encoded = requests.utils.quote(lucene_q)
+    url = f"{BASE_URL}/search/?q={q_encoded}&rows={max_results}"
+
+    # chama API ORCID
     try:
         resp = SESSION.get(url, headers=HEADERS, timeout=TIMEOUT)
         resp.raise_for_status()
@@ -63,21 +83,27 @@ def search_orcid_by_name(query: str, max_results: int = 10) -> List[Dict[str, st
         raise HTTPException(status_code=502, detail=f"Erro na ORCID API: {e}")
 
     data = resp.json()
-    results = data.get("result", []) or []
-    output: List[Dict[str, str]] = []
+    raw = data.get("result", []) or []
 
-    for item in results:
+    # extrai ORCID + full_name
+    output: List[Dict[str, str]] = []
+    for item in raw:
         orcid_id = item.get("orcid-identifier", {}).get("path")
         if not orcid_id:
             continue
         try:
             record = fetch_orcid(orcid_id)
             name_data = format_name(record)
-            full_name = name_data.get("full_name", "")
+            full_name = name_data.get("full_name", "") or ""
         except Exception:
             full_name = ""
         output.append({"orcid": orcid_id, "full_name": full_name})
 
+    # filtra localmente: mantém só itens que contenham TODOS os tokens
+    output = [
+        o for o in output
+        if all(tok in normalize_name(o["full_name"]) for tok in tokens)
+    ]
     return output
 
 def format_name(data: dict) -> Dict[str, str]:
