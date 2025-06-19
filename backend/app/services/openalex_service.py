@@ -4,33 +4,42 @@ from typing import Dict, Any, Optional
 import requests
 from fastapi import HTTPException
 
-from api_clients.openalex_client import (
-    # (Caso queira reutilizar métricas ou outros helpers do OpenAlex)
-    # parse_orcid_data,
-    # fetch_citations,
-    # count_by_year,
-    # compute_metrics,
-    format_works_from_openalex
-)
-from api_clients.orcid_client import (
-    fetch_orcid,
-    format_works as format_orcid_works
-)
+from api_clients.openalex_client import format_works_from_openalex
+from api_clients.orcid_client import fetch_orcid, format_works as format_orcid_works
 from app.utils.utils import normalize_doi, normalize_orcid
 
 
 def get_publication_details(doi: str) -> Dict[str, Any]:
     """
-    Busca detalhes de uma publicação pelo DOI:
-    - Recupera dados do OpenAlex
-    - Extrai autor principal com ORCID e, se disponível, obtém detalhes
-      adicionais do registro ORCID para complementar o resultado.
+    Retorna detalhes de uma publicação a partir do DOI, combinando dados do OpenAlex
+    e, se disponível, informações adicionais do autor no ORCID.
+
+    Args:
+        doi (str): DOI da publicação (pode vir com prefixo URL ou "doi:").
+
+    Returns:
+        Dict[str, Any]: Dicionário contendo:
+            - doi (str)
+            - id (str)
+            - title (str)
+            - publication_year (int)
+            - type (str)
+            - cited_by_count (int)
+            - authorships (List[Dict[str,str]])
+            - container, url, path (opcionais, se presentes no ORCID)
+            - orcid_publication_year (opcional, se houver discrepância de ano)
+
+    Raises:
+        HTTPException:
+            - 502: falha na conexão com o OpenAlex
+            - 404: publicação não encontrada no OpenAlex
+            - demais códigos de erro HTTP repassados
     """
-    # 1. Normaliza o DOI
+    # Normaliza o DOI e monta a chave para o OpenAlex
     d_norm = normalize_doi(doi)
     key = f"doi:{d_norm}"
 
-    # 2. Chama a API do OpenAlex
+    # Consulta o OpenAlex
     oa_url = f"https://api.openalex.org/works/{key}"
     try:
         resp = requests.get(oa_url, timeout=10)
@@ -44,7 +53,7 @@ def get_publication_details(doi: str) -> Dict[str, Any]:
 
     work_oa = resp.json()
 
-    # 3. Tenta extrair o primeiro ORCID de autoria
+    # Extrai o primeiro ORCID de autoria, se existir
     first_orcid_url: Optional[str] = next(
         (
             a["author"]["orcid"]
@@ -59,13 +68,14 @@ def get_publication_details(doi: str) -> Dict[str, Any]:
         oid = normalize_orcid(first_orcid_url)
         raw = fetch_orcid(oid, section="works") or {}
         formatted = format_orcid_works(raw) or []
+        # Busca a obra correspondente no registro ORCID
         for w in formatted:
             if w.get("doi") and normalize_doi(w["doi"]) == d_norm:
                 orcid_rec = w.copy()
                 orcid_rec["orcid_id"] = oid
                 break
 
-    # 4. Monta o resultado base a partir do OpenAlex
+    # Monta o resultado base usando dados do OpenAlex
     result: Dict[str, Any] = {
         "doi":              d_norm,
         "id":               work_oa.get("id"),
@@ -82,13 +92,13 @@ def get_publication_details(doi: str) -> Dict[str, Any]:
         ]
     }
 
-    # 5. Se houver dados do ORCID, complementa campos adicionais
+    # Se houver registro ORCID, adiciona campos extras
     if orcid_rec:
         for fld in ("container", "url", "path"):
             if orcid_rec.get(fld) and fld not in result:
                 result[fld] = orcid_rec[fld]
 
-        # Ajusta ano se houver discrepância
+        # Ajusta ano se houver divergência
         yr = orcid_rec.get("year")
         try:
             yr_int = int(yr)  # type: ignore
@@ -102,13 +112,23 @@ def get_publication_details(doi: str) -> Dict[str, Any]:
 
 def get_works_from_openalex(orcid_id: str) -> Dict[str, Any]:
     """
-    Proxy para format_works_from_openalex, trazendo obras completas
-    do OpenAlex para um dado ORCID.
+    Retorna lista de obras de um autor ORCID consultando o OpenAlex.
+
+    Args:
+        orcid_id (str): Identificador ORCID do autor.
+
+    Returns:
+        Dict[str, Any]: {"works": List[Dict[str, Any]]}
+
+    Raises:
+        HTTPException:
+            - 500: falha genérica ao obter obras do OpenAlex
     """
     try:
         works = format_works_from_openalex(orcid_id)
         return {"works": works}
     except HTTPException:
+        # Repassa erros HTTP conhecidos
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar obras no OpenAlex: {e}")
