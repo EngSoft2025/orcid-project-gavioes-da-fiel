@@ -1,7 +1,7 @@
 # api_clients/orcid_client.py
 
 import html
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import requests
 import unicodedata
@@ -195,53 +195,64 @@ def format_keywords(data: dict) -> List[str]:
     items = kw_parent.get("keyword", []) if isinstance(kw_parent, dict) else []
     return [html.unescape(kw.get("content", "")) for kw in items if kw.get("content")]
 
-def _fmt_date(d: dict) -> str | None:
+def _fmt_date(d: Optional[dict]) -> Optional[str]:
     """
     Formata dict de date (year, month, day) em 'YYYY-M-D'.
+    Retorna None se entrada for inválida ou sem componentes.
     """
-    if not d:
+    if not d or not isinstance(d, dict):
         return None
-    y = d.get("year", {}).get("value")
-    m = d.get("month", {}).get("value")
-    day = d.get("day", {}).get("value")
-    parts = [str(p) for p in (y, m, day) if p]
+
+    # Extrai valores somente se vierem em dicts
+    year_dict = d.get("year") or {}
+    y = year_dict.get("value")
+
+    month_dict = d.get("month") or {}
+    m = month_dict.get("value")
+
+    day_dict = d.get("day") or {}
+    day = day_dict.get("value")
+
+    parts = [str(p) for p in (y, m, day) if p is not None]
     return "-".join(parts) if parts else None
+
 
 def format_employment(data: dict) -> List[Dict]:
     """
     Formata lista de empregos de /{orcid_id}/employments.
     """
     out = []
-    for group in data.get("affiliation-group", []) or []:
-        for item in group.get("summaries", []) or []:
-            s = item.get("employment-summary", {}) or {}
-            org = s.get("organization", {}) or {}
+    for group in data.get("affiliation-group") or []:
+        for item in group.get("summaries") or []:
+            s = item.get("employment-summary") or {}
+            org = s.get("organization") or {}
             out.append({
                 "organization": org.get("name"),
-                "department":  s.get("department-name"),
-                "role_title":  s.get("role-title"),
-                "start_date":  _fmt_date(s.get("start-date")),
-                "end_date":    _fmt_date(s.get("end-date")),
-                "url":         (s.get("url") or {}).get("value")
+                "department":   s.get("department-name"),
+                "role_title":   s.get("role-title"),
+                "start_date":   _fmt_date(s.get("start-date")),
+                "end_date":     _fmt_date(s.get("end-date")),
+                "url":          (s.get("url") or {}).get("value")
             })
     return out
+
 
 def format_education_and_qualifications(data: dict) -> List[Dict]:
     """
     Formata lista de formações de /{orcid_id}/educations.
     """
     out = []
-    for group in data.get("affiliation-group", []) or []:
-        for item in group.get("summaries", []) or []:
-            s = item.get("education-summary", {}) or {}
-            org = s.get("organization", {}) or {}
+    for group in data.get("affiliation-group") or []:
+        for item in group.get("summaries") or []:
+            s = item.get("education-summary") or {}
+            org = s.get("organization") or {}
             out.append({
                 "organization": org.get("name"),
-                "department":  s.get("department-name"),
-                "role_title":  s.get("role-title"),
-                "start_date":  _fmt_date(s.get("start-date")),
-                "end_date":    _fmt_date(s.get("end-date")),
-                "url":         (s.get("url") or {}).get("value")
+                "department":   s.get("department-name"),
+                "role_title":   s.get("role-title"),
+                "start_date":   _fmt_date(s.get("start-date")),
+                "end_date":     _fmt_date(s.get("end-date")),
+                "url":          (s.get("url") or {}).get("value")
             })
     return out
 
