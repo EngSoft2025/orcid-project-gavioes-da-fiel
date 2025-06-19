@@ -1,4 +1,4 @@
-```markdown
+````markdown
 # ORCID & OpenAlex Backend
 
 Este é o servidor FastAPI que expõe endpoints para consulta de dados de autores e publicações usando as APIs do ORCID e do OpenAlex.
@@ -19,48 +19,44 @@ Este é o servidor FastAPI que expõe endpoints para consulta de dados de autore
 
 ## Estrutura de diretórios
 
-```
-
+```bash
 backend/
 ├── app/
 │   ├── main.py                    # Ponto de entrada FastAPI
 │   ├── routers/                   # Definição das rotas
 │   │   ├── orcid.py
 │   │   ├── filters.py
-│   │   └── works\_publication.py
-│   ├── services/                  # Lógica de negócio e integração com APIs
-│   │   ├── orcid\_service.py
-│   │   └── openalex\_service.py
+│   │   └── works_publication.py
+│   ├── services/                  # Integração com APIs
+│   │   ├── orcid_service.py
+│   │   └── openalex_service.py
 │   └── utils/                     # Helpers (normalização, filtros, XML)
 │       └── utils.py
 │
-├── api\_clients/                   # Wrappers para ORCID / OpenAlex
-│   ├── **init**.py
-│   ├── orcid\_client.py
-│   └── openalex\_client.py
+├── api_clients/                   # Wrappers para ORCID / OpenAlex
+│   ├── __init__.py
+│   ├── orcid_client.py
+│   └── openalex_client.py
 │
 ├── requirements.txt               # Dependências Python
-└── README.md                      # Este documento
-
+└── README.md                      
 ````
 
 ## Pré-requisitos
 
-- Python 3.10+  
-- pip  
+* Python 3.10+
+* pip
 
 ---
 
 ## Instalação e execução
-
-Para rodar o servidor:
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
-````
+```
 
 ```
 ```
