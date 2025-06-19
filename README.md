@@ -1,4 +1,5 @@
 <h1 align="center">Gaviões da Fiel 🦅</h1>
+<p align="center"><strong>Pinga Dados</strong> — Plataforma para integração e visualização de dados acadêmicos</p>
 <p align="center">Projeto da disciplina SSC0130 - Engenharia de Software (ICMC/USP)</p>
 
 <p align="center">
@@ -19,7 +20,7 @@
 
 ## <div id="objetivo"></div> Objetivo
 
-A proposta do projeto **Gaviões da Fiel** é desenvolver uma aplicação web que complemente e melhore a experiência de uso da plataforma **ORCID**, com foco nas necessidades específicas dos pesquisadores brasileiros. Entre os objetivos estão:
+A proposta do projeto **Gaviões da Fiel**, com a aplicação **Pinga Dados**, é desenvolver uma aplicação web que complemente e melhore a experiência de uso da plataforma **ORCID**, com foco nas necessidades específicas dos pesquisadores brasileiros. Entre os objetivos estão:
 
 * Melhorar a usabilidade e acessibilidade da interface
 * Tornar a produção científica mais compreensível ao público geral
@@ -34,7 +35,7 @@ A proposta do projeto **Gaviões da Fiel** é desenvolver uma aplicação web qu
 ```bash
 orcid-project-gavioes-da-fiel/
 │
-├── backend/                     # Lógica de servidor e integração com APIs
+├── backend/                    # Lógica de servidor e integração com APIs
 │   ├── api_clients/            # Clientes para integração com APIs externas
 │   │   ├── __init__.py
 │   │   ├── openalex_client.py
@@ -61,9 +62,6 @@ orcid-project-gavioes-da-fiel/
 │   └── README.md               # Instruções específicas do frontend
 │
 ├── README.md                   # Documentação principal do projeto
----
-
-Claro! Aqui está a seção **atualizada** de **Instalação e Uso**, agora com instruções separadas para frontend e backend:
 
 ---
 
@@ -176,11 +174,11 @@ O projeto adota testes em múltiplos níveis:
 | Scope Creep                     | Alto    | Backlog priorizado e PO atuante |
 | Time reduzido                   | Médio   | Pair programming e foco         |
 | Pouca validação                 | Alto    | Prototipação contínua           |
-| Falta de stakeholders           | Médio   | Antecipação e uso de colegas    |
+| Falta de stakeholders           | Médio   | Agendamento prévio e apoio de colegas para testes |
 
 ---
 
-## <div id="licenca"></div>📝 Licença
+## <div id="licenca"></div> Licença
 
 Este projeto está licenciado sob a Licença MIT. Veja `LICENSE` para mais informações.
 
