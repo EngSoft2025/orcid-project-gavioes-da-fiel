@@ -14,13 +14,11 @@
   font-family: "Montserrat", sans-serif;
 }
 
-.sidebar-container {
-  display: flex;
-  height: 100vh;
-}
-
 .sidebar-content {
   background-color: #0f172a;
+  white-space: normal !important; /* permite múltiplas linhas */
+  overflow-wrap: break-word !important; /* quebra na palavra */
+  word-break: break-word !important; /* quebra arbitrária se não houver espaço */
   padding: 20px;
   overflow-y: auto;
   flex-grow: 1;
@@ -36,6 +34,9 @@
   font-weight: 800;
   font-size: 1.25rem;
   margin-bottom: 8px;
+  white-space: normal !important; /* permite múltiplas linhas */
+  overflow-wrap: break-word !important; /* quebra na palavra */
+  word-break: break-word !important; /* quebra arbitrária se não houver espaço */
 }
 
 .sidebar-subtitle {
@@ -43,6 +44,9 @@
   font-weight: 700 !important;
   font-size: 1.1rem;
   margin-bottom: 8px;
+  white-space: normal !important; /* permite múltiplas linhas */
+  overflow-wrap: break-word !important; /* quebra na palavra */
+  word-break: break-word !important; /* quebra arbitrária se não houver espaço */
 }
 
 /* === Espaçamento entre seções === */
@@ -161,7 +165,7 @@ body.dark .sidebar-title,
 body.dark .sidebar-subtitle,
 body.dark .sidebar-text,
 body.dark .keyword-item,
-body.dark .sidebar-link{
+body.dark .sidebar-link {
   color: #f1f5f9;
 }
 
@@ -180,4 +184,13 @@ body.dark .toggle-button-container {
 
 body.dark .logo-img {
   filter: brightness(2);
+}
+/* Mobile — ocultar sidebar-container exceto quando tiver .open */
+@media (max-width: 768px) {
+  .sidebar-container {
+    display: none !important;
+  }
+  .sidebar-container.open {
+    display: flex !important;
+  }
 }
