@@ -1,5 +1,0 @@
-frontend/node_modules
-backend//users.db
-# Ignorar ambientes virtuais
-venv/
-backend/venv/
