@@ -65,7 +65,7 @@ export default function Sidebar({ open, setOpen, data }) {
   };
 
   return (
-    <Box className="sidebar-container">
+    <Box className={`sidebar-container${open ? " open" : ""}`}>
       <StyledDrawer variant="permanent" open={open} className="sidebar">
         <Box className="toggle-button-container">
           <div className="sidebarlogo">

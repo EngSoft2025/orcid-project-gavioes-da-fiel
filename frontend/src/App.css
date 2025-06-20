@@ -17,6 +17,11 @@ body {
   );
   color: #111827;
   transition: background-color 0.3s, color 0.3s;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto; /* permitir rolagem vertical */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
 }
 
 body.dark {
@@ -507,4 +512,32 @@ body.dark .benefit-box.purple {
 }
 body.dark .benefit-box p {
   color: #f8fafcd3;
+}
+
+@media (max-width: 480px) {
+  .search-wrapper {
+    flex-wrap: nowrap;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .search-wrapper input {
+    font-size: 0.8rem;
+    min-width: 0;
+  }
+
+  .search-wrapper button {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: 0;
+  }
+  .benefits-section {
+    width: 80%;
+    margin: auto;
+  }
+  .home-header {
+    padding: 10px 16px;
+  }
 }
