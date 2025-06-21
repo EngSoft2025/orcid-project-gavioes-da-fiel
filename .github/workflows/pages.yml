@@ -2,7 +2,7 @@ name: Pages build and deployment
 
 on:
   push:
-    branches: [main]
+    branches: [main, teste]
   workflow_dispatch:
 
 permissions:
