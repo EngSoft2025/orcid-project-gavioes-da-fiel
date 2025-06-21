@@ -1,7 +1,7 @@
 // src/pages/Dashboard.js
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { FaSearch, FaMoon, FaSun, FaBars } from "react-icons/fa";
+import { FaSearch, FaMoon, FaSun } from "react-icons/fa";
 import "../Dashboard.css";
 import LoadingDrop from "../components/LoadingDrop";
 import Sidebar from "../components/Sidebar";
@@ -201,13 +201,11 @@ function Dashboard() {
           <MenuIcon />
         </button>
         <div className="logo">
-          <a href="#">
-            <img
-              src="../img/logo.png"
-              alt="Logo da Plataforma"
-              className="logo-img"
-            />
-          </a>
+          <img
+            src="../img/logo.png"
+            alt="Logo da Plataforma"
+            className="logo-img"
+          />
         </div>
         <div className="header-controls">
           <button className="theme-toggle" onClick={toggleDarkMode}>

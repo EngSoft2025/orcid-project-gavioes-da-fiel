@@ -5,7 +5,7 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user] = useState(null);
 
   useEffect(() => {
     // checa token/localStorage…

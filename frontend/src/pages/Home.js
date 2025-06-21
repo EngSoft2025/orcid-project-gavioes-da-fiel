@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -32,52 +32,51 @@ export default function Home() {
 
   const orcidRegex = /^\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/;
 
-  const handleSearch = async (term) => {
-    const searchTerm = query.trim();
-    if (!searchTerm) return;
+  const handleSearch = useCallback(
+    async (term) => {
+      const searchTerm = query.trim();
+      if (!searchTerm) return;
 
-    setLoading(true);
-    setError(null);
-    setResults([]);
+      setLoading(true);
+      setError(null);
+      setResults([]);
 
-    try {
-      let data;
-      if (orcidRegex.test(searchTerm)) {
-        const res = await fetch(
-          `http://localhost:8000/orcid/${searchTerm}/name`
-        );
-        if (!res.ok) throw new Error(`Status ${res.status}`);
-        const obj = await res.json();
-        navigate(`/dashboard/${searchTerm}`)
-        data = [{ orcid: searchTerm, full_name: obj.full_name }];
-      } else {
-        const res = await fetch(
-          `http://localhost:8000/orcid/search/name?query=${encodeURIComponent(
-            searchTerm
-          )}&max_results=10`
-        );
-        if (!res.ok) throw new Error(`Status ${res.status}`);
-        data = await res.json();
+      try {
+        let data;
+        if (orcidRegex.test(searchTerm)) {
+          const res = await fetch(
+            `http://localhost:8000/orcid/${searchTerm}/name`
+          );
+          if (!res.ok) throw new Error(`Status ${res.status}`);
+          const obj = await res.json();
+          navigate(`/dashboard/${searchTerm}`);
+          data = [{ orcid: searchTerm, full_name: obj.full_name }];
+        } else {
+          const res = await fetch(
+            `http://localhost:8000/orcid/search/name?query=${encodeURIComponent(
+              searchTerm
+            )}&max_results=10`
+          );
+          if (!res.ok) throw new Error(`Status ${res.status}`);
+          data = await res.json();
+        }
+        setResults(data);
+      } catch (err) {
+        setError("Falha na busca: " + err.message);
+      } finally {
+        setLoading(false);
       }
-      setResults(data);
-    } catch (err) {
-      setError("Falha na busca: " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+    },
+    [navigate, orcidRegex, query]
+  );
   useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      if (query.length > 2) {
-        handleSearch(query);
-      } else {
-        setResults([]);
-      }
+    const delay = setTimeout(() => {
+      if (query.length > 2) handleSearch(query);
+      else setResults([]);
     }, 400);
 
-    return () => clearTimeout(delayDebounce);
-  }, [query]);
+    return () => clearTimeout(delay);
+  }, [query, handleSearch]);
 
   return (
     <div>
