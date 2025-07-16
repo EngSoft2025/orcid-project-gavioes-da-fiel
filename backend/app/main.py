@@ -22,3 +22,6 @@ app.include_router(orcid.router, prefix="/orcid", tags=["ORCID"])
 app.include_router(works_router)  # prefix="/orcid/{orcid_id}/works", tags=["Works"]
 app.include_router(filters.router, prefix="/orcid/{orcid_id}/works", tags=["Filters"])
 app.include_router(publication_router)  # prefix="/works/publication", tags=["Publication"]
+@app.get("/")
+def read_root():
+    return {"message": "API FastAPI online no Render!"}
