@@ -3,7 +3,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import orcid, filters
+from app.routers import orcid, filters,  works_publication 
+
 from app.routers.works_publication import works_router, publication_router
 
 app = FastAPI()
