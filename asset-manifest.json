@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/NOME-DO-REPO/static/css/main.d5649049.css",
+    "main.js": "/NOME-DO-REPO/static/js/main.7ec7ded0.js",
+    "static/media/dark-logo.png": "/NOME-DO-REPO/static/media/dark-logo.db0460edc7c5312c9ffc.png",
+    "index.html": "/NOME-DO-REPO/index.html",
+    "main.d5649049.css.map": "/NOME-DO-REPO/static/css/main.d5649049.css.map",
+    "main.7ec7ded0.js.map": "/NOME-DO-REPO/static/js/main.7ec7ded0.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.d5649049.css",
+    "static/js/main.7ec7ded0.js"
+  ]
+}
