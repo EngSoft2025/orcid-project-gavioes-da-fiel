@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/orcid-project-gavioes-da-fiel/static/css/main.c2224b1b.css",
-    "main.js": "/orcid-project-gavioes-da-fiel/static/js/main.26037efa.js",
+    "main.css": "/orcid-project-gavioes-da-fiel/static/css/main.aba3b0ad.css",
+    "main.js": "/orcid-project-gavioes-da-fiel/static/js/main.fa27cad9.js",
     "index.html": "/orcid-project-gavioes-da-fiel/index.html",
-    "main.c2224b1b.css.map": "/orcid-project-gavioes-da-fiel/static/css/main.c2224b1b.css.map",
-    "main.26037efa.js.map": "/orcid-project-gavioes-da-fiel/static/js/main.26037efa.js.map"
+    "main.aba3b0ad.css.map": "/orcid-project-gavioes-da-fiel/static/css/main.aba3b0ad.css.map",
+    "main.fa27cad9.js.map": "/orcid-project-gavioes-da-fiel/static/js/main.fa27cad9.js.map"
   },
   "entrypoints": [
-    "static/css/main.c2224b1b.css",
-    "static/js/main.26037efa.js"
+    "static/css/main.aba3b0ad.css",
+    "static/js/main.fa27cad9.js"
   ]
 }
