@@ -1,5 +1,6 @@
 {
   "name": "frontend",
+  "homepage": "https://EngSoft2025.github.io/orcid-project-gavioes-da-fiel",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -28,7 +29,9 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "proxy": "http://localhost:5000"
+    "proxy": "http://localhost:5000",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
     "extends": [
