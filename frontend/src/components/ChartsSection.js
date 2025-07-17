@@ -1,15 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import Chart from "chart.js/auto";
 
-// A simple skeleton loader for the chart
+const API_URL = process.env.REACT_APP_API_URL;
+
+// Loader enquanto o gráfico carrega
 const ChartSkeleton = () => (
   <div className="chart-skeleton-container">
-    <div className="skeleton-bar" style={{ height: '60%' }}></div>
-    <div className="skeleton-bar" style={{ height: '80%' }}></div>
-    <div className="skeleton-bar" style={{ height: '70%' }}></div>
-    <div className="skeleton-bar" style={{ height: '90%' }}></div>
-    <div className="skeleton-bar" style={{ height: '75%' }}></div>
-    <div className="skeleton-bar" style={{ height: '85%' }}></div>
+    <div className="skeleton-bar" style={{ height: "60%" }}></div>
+    <div className="skeleton-bar" style={{ height: "80%" }}></div>
+    <div className="skeleton-bar" style={{ height: "70%" }}></div>
+    <div className="skeleton-bar" style={{ height: "90%" }}></div>
+    <div className="skeleton-bar" style={{ height: "75%" }}></div>
+    <div className="skeleton-bar" style={{ height: "85%" }}></div>
   </div>
 );
 
@@ -30,7 +32,7 @@ function ChartsSection({ orcidId }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`http://localhost:8000/orcid/${orcidId}/stats`);
+        const res = await fetch(`${API_URL}/orcid/${orcidId}/stats`);
         if (!res.ok) throw new Error("Erro ao buscar estatísticas do gráfico.");
         const json = await res.json();
         setChartData(json);
@@ -41,6 +43,7 @@ function ChartsSection({ orcidId }) {
         setLoading(false);
       }
     }
+
     fetchStats();
   }, [orcidId]);
 
@@ -91,26 +94,34 @@ function ChartsSection({ orcidId }) {
         maintainAspectRatio: false,
         interaction: { mode: "index", intersect: false },
         scales: {
-          x: { title: { display: true, text: 'Ano' } },
+          x: { title: { display: true, text: "Ano" } },
           yCitations: {
-            type: 'linear',
+            type: "linear",
             display: true,
-            position: 'left',
-            title: { display: true, text: 'Citações', color: 'rgba(255, 99, 132, 1)' },
-            ticks: { color: 'rgba(255, 99, 132, 1)' },
+            position: "left",
+            title: {
+              display: true,
+              text: "Citações",
+              color: "rgba(255, 99, 132, 1)",
+            },
+            ticks: { color: "rgba(255, 99, 132, 1)" },
             grid: { drawOnChartArea: true },
           },
           yPublications: {
-            type: 'linear',
+            type: "linear",
             display: true,
-            position: 'right',
-            title: { display: true, text: 'Publicações', color: 'rgba(54, 162, 235, 1)' },
-            ticks: { color: 'rgba(54, 162, 235, 1)', stepSize: 5 },
+            position: "right",
+            title: {
+              display: true,
+              text: "Publicações",
+              color: "rgba(54, 162, 235, 1)",
+            },
+            ticks: { color: "rgba(54, 162, 235, 1)", stepSize: 5 },
             grid: { drawOnChartArea: false },
           },
         },
         plugins: {
-          legend: { position: 'top' },
+          legend: { position: "top" },
           tooltip: {
             callbacks: {
               label: function (context) {
@@ -131,11 +142,22 @@ function ChartsSection({ orcidId }) {
   }, [chartData, loading, error]);
 
   if (loading) return <ChartSkeleton />;
-  if (error) return <div className="error-message chart-error">Erro ao carregar o gráfico.</div>;
-  if (!chartData || !chartData.years || chartData.years.length === 0) return <div className="empty-state chart-empty">Nenhum dado disponível.</div>;
+  if (error)
+    return (
+      <div className="error-message chart-error">
+        Erro ao carregar o gráfico.
+      </div>
+    );
+  if (!chartData || !chartData.years || chartData.years.length === 0)
+    return (
+      <div className="empty-state chart-empty">Nenhum dado disponível.</div>
+    );
 
   return (
-    <div className="chart-canvas-container" style={{ height: '450px', width: '100%' }}>
+    <div
+      className="chart-canvas-container"
+      style={{ height: "450px", width: "100%" }}
+    >
       <canvas ref={chartRef}></canvas>
     </div>
   );

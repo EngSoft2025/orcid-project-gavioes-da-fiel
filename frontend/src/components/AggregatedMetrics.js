@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
-// A simple helper component for the loading state
+const API_URL = process.env.REACT_APP_API_URL;
+
+// Componente de loading
 const MetricItemSkeleton = () => (
   <li className="skeleton-item">
     <span className="skeleton-text short"></span>
@@ -15,16 +17,17 @@ function AggregatedMetrics({ orcidId }) {
 
   useEffect(() => {
     if (!orcidId) {
-        setLoading(false);
-        return;
-    };
+      setLoading(false);
+      return;
+    }
 
     async function fetchMetrics() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`http://localhost:8000/orcid/${orcidId}/metrics`);
-        if (!res.ok) throw new Error(`Failed to fetch metrics with status ${res.status}`);
+        const res = await fetch(`${API_URL}/orcid/${orcidId}/metrics`);
+        if (!res.ok)
+          throw new Error(`Failed to fetch metrics with status ${res.status}`);
         const data = await res.json();
         setMetrics(data);
       } catch (err) {
@@ -38,25 +41,22 @@ function AggregatedMetrics({ orcidId }) {
     fetchMetrics();
   }, [orcidId]);
 
-  // Helper to format numbers with dots for thousands separators
-  const formatNumber = (num) => {
-    if (typeof num !== 'number') return num;
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  }
-  
-  // Helper to format floats with a comma for the decimal point
-  const formatFloat = (num) => {
-    if (typeof num !== 'number') return num;
-    // Round to 1 decimal place and then replace the dot
-    return num.toFixed(1).toString().replace('.', ',');
-  }
+  const formatNumber = (num) =>
+    typeof num === "number"
+      ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+      : num;
+
+  const formatFloat = (num) =>
+    typeof num === "number" ? num.toFixed(1).replace(".", ",") : num;
 
   return (
     <div className="aggregated-metrics-card">
       <h3 className="section-title">Métricas Agregadas</h3>
       {loading && (
         <ul className="metrics-list">
-          {Array.from({ length: 7 }).map((_, i) => <MetricItemSkeleton key={i} />)}
+          {Array.from({ length: 7 }).map((_, i) => (
+            <MetricItemSkeleton key={i} />
+          ))}
         </ul>
       )}
       {error && <div className="error-message">Erro ao carregar métricas.</div>}
@@ -88,7 +88,9 @@ function AggregatedMetrics({ orcidId }) {
           </li>
           <li>
             <span>Citações da Pesquisa Mais Citada:</span>
-            <strong>{formatNumber(metrics.pesquisa_mais_citada?.citations)}</strong>
+            <strong>
+              {formatNumber(metrics.pesquisa_mais_citada?.citations)}
+            </strong>
           </li>
         </ul>
       )}

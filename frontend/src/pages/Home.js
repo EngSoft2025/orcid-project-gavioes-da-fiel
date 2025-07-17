@@ -14,6 +14,8 @@ import {
 } from "react-icons/fa";
 import { FaUsers } from "react-icons/fa6";
 
+const API_URL = process.env.REACT_APP_API_URL;
+
 export default function Home() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -43,16 +45,14 @@ export default function Home() {
     try {
       let data;
       if (orcidRegex.test(searchTerm)) {
-        const res = await fetch(
-          `http://localhost:8000/orcid/${searchTerm}/name`
-        );
+        const res = await fetch(`${API_URL}/orcid/${searchTerm}/name`);
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const obj = await res.json();
-        navigate(`/dashboard/${searchTerm}`)
+        navigate(`/dashboard/${searchTerm}`);
         data = [{ orcid: searchTerm, full_name: obj.full_name }];
       } else {
         const res = await fetch(
-          `http://localhost:8000/orcid/search/name?query=${encodeURIComponent(
+          `${API_URL}/orcid/search/name?query=${encodeURIComponent(
             searchTerm
           )}&max_results=10`
         );
@@ -83,9 +83,10 @@ export default function Home() {
     <div>
       <header className="home-header">
         <div className="logo">
-          {" "}
           <img
-            src="../img/logo.png"
+            src={`${process.env.PUBLIC_URL}/img/${
+              darkMode ? "dark-logo.png" : "logo.png"
+            }`}
             alt="Logo da Plataforma"
             className="logo-img"
           />

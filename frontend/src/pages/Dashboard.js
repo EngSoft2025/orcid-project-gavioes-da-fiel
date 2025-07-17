@@ -40,13 +40,12 @@ function Dashboard() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`http://localhost:8000/orcid/${authorId}/all`);
+        const res = await fetch(`${API_URL}/orcid/${authorId}/all`);
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const json = await res.json();
 
-        // Faz fetch dos cited_by_count
         const citRes = await fetch(
-          `http://localhost:8000/orcid/${authorId}/works/filter_by_citations`
+          `${API_URL}/orcid/${authorId}/works/filter_by_citations`
         );
         if (!citRes.ok) throw new Error(`Status ${citRes.status}`);
         const citJson = await citRes.json();
@@ -72,13 +71,12 @@ function Dashboard() {
     }
     fetchAll();
   }, [authorId]);
-
   const handleKeywordClick = async (keyword) => {
     if (!keyword) return;
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:8000/orcid/${authorId}/works/filter_by_keyword?keyword=${encodeURIComponent(
+        `${API_URL}/orcid/${authorId}/works/filter_by_keyword?keyword=${encodeURIComponent(
           keyword
         )}`
       );
@@ -100,7 +98,7 @@ function Dashboard() {
         let works = [];
         if (citationSort === "desc") {
           const res = await fetch(
-            `http://localhost:8000/orcid/${authorId}/works/filter_by_citations`
+            `${API_URL}/orcid/${authorId}/works/filter_by_citations`
           );
           if (!res.ok) throw new Error(`Status ${res.status}`);
           const json = await res.json();
@@ -130,14 +128,11 @@ function Dashboard() {
       setSelectedWork(work); // fallback
       return;
     }
-    console.log(work);
 
     setLoading(true);
     try {
       const encodedDoi = encodeURIComponent(work.doi);
-      const res = await fetch(
-        `http://localhost:8000/works/publication/${encodedDoi}`
-      );
+      const res = await fetch(`${API_URL}/works/publication/${encodedDoi}`);
       if (!res.ok) throw new Error("Erro ao buscar detalhes da publicação");
 
       const detailedWork = await res.json();
@@ -152,9 +147,7 @@ function Dashboard() {
 
   const handleDownloadXML = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:8000/orcid/${authorId}/export/xml`
-      );
+      const response = await fetch(`${API_URL}/orcid/${authorId}/export/xml`);
       if (!response.ok) throw new Error("Erro ao baixar XML");
 
       const blob = await response.blob();
