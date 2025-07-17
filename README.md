@@ -7,6 +7,7 @@
   <a href="#instalacao">Instalação e Uso</a> • 
   <a href="#objetivo">Objetivo</a> • 
   <a href="#tecnologias">Tecnologias</a> • 
+   <a href="#hospedagem">Hospedagem</a> • 
   <a href="#estrutura_branches">Estrutura de Branches</a> • 
   <a href="#testes">Testes</a> • 
   <a href="#ciclo">Ciclo de Desenvolvimento</a> • 
