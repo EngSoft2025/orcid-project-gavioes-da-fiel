@@ -130,6 +130,40 @@ uvicorn app.main:app --reload --port 8000
 - **Scrum** (metodologia ágil de desenvolvimento)
 
 ---
+<div id="hospedagem"></div> 🌐 Hospedagem
+A aplicação está disponível publicamente em dois ambientes distintos:
+
+🔹 Frontend — GitHub Pages
+A interface da plataforma (React) está hospedada via GitHub Pages.
+
+Acesse em: https://engsoft2025.github.io/orcid-project-gavioes-da-fiel
+
+Para publicar uma nova versão após alterações:
+
+bash
+Copiar
+Editar
+npm run build
+npm run deploy
+⚙️ Certifique-se de ter configurado no package.json:
+
+json
+Copiar
+Editar
+"homepage": "https://engsoft2025.github.io/orcid-project-gavioes-da-fiel",
+"scripts": {
+  "predeploy": "npm run build",
+  "deploy": "gh-pages -d build"
+}
+🔹 Backend — Render
+O backend em FastAPI está hospedado na plataforma Render.
+
+Endpoint base: https://orcid-project-gavioes-da-fiel.onrender.com
+
+Documentação da API: https://orcid-project-gavioes-da-fiel.onrender.com/docs
+
+O deploy ocorre automaticamente a partir de pushs na branch deploy-backend-render.
+---
 
 ## <div id="estrutura_branches"></div> Estrutura de Branches
 
