@@ -1,41 +1,41 @@
 .loading-container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  flex-direction: column;
   height: 100vh;
-  animation: fadein 0.3s ease;
+  background-color: #f9fafc; /* claro por padrão */
 }
 
-.drop {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #3b82f6, #9333ea);
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  animation: drip 1.2s infinite ease-in-out;
+.gota-loader {
+  width: 60px;
+  height: 60px;
+  animation: pulse 1.6s infinite ease-in-out;
 }
 
 .loading-text {
-  margin-top: 16px;
-  font-size: 1.1rem;
-  color: #1d4ed8;
+  font-size: 1.2rem;
+  color: #2363d1;
+  margin-top: 12px;
 }
 
-@keyframes drip {
+/* 🌙 Modo escuro */
+body.dark .loading-container {
+  background-color: #0e1a2b; /* fundo escuro */
+}
+
+body.dark .loading-text {
+  color: #9ec3ff; /* cor clara no escuro */
+}
+
+@keyframes pulse {
   0%,
   100% {
-    transform: translateY(0) scale(1);
+    transform: scale(1);
+    opacity: 0.8;
   }
   50% {
-    transform: translateY(8px) scale(1.1);
-  }
-}
-
-@keyframes fadein {
-  from {
-    opacity: 0;
-  }
-  to {
+    transform: scale(1.1);
     opacity: 1;
   }
 }
